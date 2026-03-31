@@ -3,7 +3,9 @@
   "blocked_by": [
     "jr-b6m"
   ],
-  "blocks": [],
+  "blocks": [
+    "jr-cpk"
+  ],
   "created": "2026-03-31T15:52:09Z",
   "description": "InputTranslator has no concept of hold duration. It only knows was_pressed/is_pressed. Add per-button press timestamp tracking so actions can query 'how long has this been held'. Depends on Action redesign.",
   "id": "jr-2k6",
