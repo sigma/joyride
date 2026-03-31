@@ -57,8 +57,10 @@ in
     system.activationScripts.postActivation.text = ''
       echo >&2 "installing ${appName}.app..."
       mkdir -p "${appDir}/Contents/MacOS"
+      mkdir -p "${appDir}/Contents/Resources"
       cp "${storePkg}/Applications/${appName}.app/Contents/MacOS/${appName}" "${appDir}/Contents/MacOS/"
       cp "${storePkg}/Applications/${appName}.app/Contents/Info.plist" "${appDir}/Contents/"
+      cp "${storePkg}/Applications/${appName}.app/Contents/Resources/AppIcon.icns" "${appDir}/Contents/Resources/"
       /usr/bin/codesign --force --sign - --identifier dev.${appName} "${appDir}"
     '';
 

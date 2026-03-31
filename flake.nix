@@ -35,8 +35,10 @@
 
             postInstall = ''
               mkdir -p $out/Applications/joyride.app/Contents/MacOS
+              mkdir -p $out/Applications/joyride.app/Contents/Resources
               cp $out/bin/joyride $out/Applications/joyride.app/Contents/MacOS/
               cp ${./Info.plist} $out/Applications/joyride.app/Contents/Info.plist
+              cp ${./AppIcon.icns} $out/Applications/joyride.app/Contents/Resources/AppIcon.icns
             '';
 
             meta = {
