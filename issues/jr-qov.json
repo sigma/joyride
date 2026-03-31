@@ -2,13 +2,14 @@
   "assignee": "unknown",
   "blocked_by": [],
   "blocks": [],
+  "closed_at": "2026-03-31T17:06:44Z",
   "created": "2026-03-31T16:54:11Z",
   "description": "Button names like 'buttonA', 'dpadRight' are string literals shared across gamepad.rs, translator.rs, config, and settings. A typo in any one place silently breaks mapping. Fix: introduce InputId enum in joyride-config. All crates use it. Compiler enforces matching.",
   "id": "jr-qov",
   "labels": [],
   "priority": 0,
-  "status": "in_progress",
+  "status": "closed",
   "title": "Replace magic button name strings with InputId enum",
   "type": "task",
-  "updated_at": "2026-03-31T16:54:19Z"
+  "updated_at": "2026-03-31T17:06:44Z"
 }
