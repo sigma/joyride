@@ -1,0 +1,14 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-03-31T15:52:09Z",
+  "description": "All output is eprintln. Add log levels (debug/info/warn/error), consider using the log crate with a simple stderr+file backend. Enable debug logging via the existing --debug flag.",
+  "id": "jr-8w9",
+  "labels": [],
+  "priority": 3,
+  "status": "open",
+  "title": "Add structured logging with levels",
+  "type": "task",
+  "updated_at": "2026-03-31T15:52:09Z"
+}
