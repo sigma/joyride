@@ -1,5 +1,5 @@
 {
-  "assignee": "",
+  "assignee": "unknown",
   "blocked_by": [],
   "blocks": [
     "jr-2k6"
@@ -9,8 +9,8 @@
   "id": "jr-b6m",
   "labels": [],
   "priority": 2,
-  "status": "open",
+  "status": "in_progress",
   "title": "Redesign Action from enum to trait-based system",
   "type": "epic",
-  "updated_at": "2026-03-31T15:52:15Z"
+  "updated_at": "2026-03-31T16:13:37Z"
 }
