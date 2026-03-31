@@ -6,14 +6,15 @@
   "blocks": [
     "jr-cx1.7"
   ],
+  "closed_at": "2026-03-31T09:39:55Z",
   "created": "2026-03-31T09:35:14Z",
   "description": "main.rs uses workspace crates, move integration tests",
   "id": "jr-cx1.6",
   "labels": [],
   "parent": "jr-cx1",
   "priority": 2,
-  "status": "open",
+  "status": "closed",
   "title": "Clean up binary crate",
   "type": "task",
-  "updated_at": "2026-03-31T09:35:19Z"
+  "updated_at": "2026-03-31T09:39:55Z"
 }
