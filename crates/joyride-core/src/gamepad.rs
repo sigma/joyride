@@ -1,5 +1,4 @@
 use std::cell::RefCell;
-use std::collections::HashSet;
 use std::ffi::c_float;
 use std::ptr::NonNull;
 use std::rc::Rc;
@@ -13,23 +12,7 @@ use objc2_game_controller::{
     GCControllerDidConnectNotification, GCDevice,
 };
 
-#[derive(Default, Clone)]
-pub struct GamepadState {
-    pub left_stick: (f32, f32),
-    pub right_stick: (f32, f32),
-    pub dpad: (f32, f32),
-    pub pressed_buttons: HashSet<String>,
-}
-
-impl GamepadState {
-    /// Returns true if all inputs are at their neutral positions.
-    pub fn is_idle(&self) -> bool {
-        self.left_stick == (0.0, 0.0)
-            && self.right_stick == (0.0, 0.0)
-            && self.dpad == (0.0, 0.0)
-            && self.pressed_buttons.is_empty()
-    }
-}
+pub use joyride_config::GamepadState;
 
 pub struct GamepadManager {
     pub state: Rc<RefCell<GamepadState>>,

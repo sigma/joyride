@@ -6,6 +6,7 @@ use core_graphics::event::{
 use core_graphics::event_source::{CGEventSource, CGEventSourceStateID};
 use core_graphics::geometry::CGPoint;
 
+pub use joyride_config::MouseButtonKind;
 use joyride_config::{KeyCombo, Modifier};
 
 fn source() -> CGEventSource {
@@ -236,14 +237,7 @@ fn modifiers_to_flags(modifiers: &[Modifier]) -> CGEventFlags {
     flags
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
-pub enum MouseButtonKind {
-    Left,
-    Right,
-    Middle,
-    Back,
-    Forward,
-}
+// MouseButtonKind is re-exported from joyride_config
 
 #[cfg(test)]
 mod tests {

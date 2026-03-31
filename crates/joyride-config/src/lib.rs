@@ -1,5 +1,68 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fmt;
+
+// -- Shared types used by translator, emitter, and tests --
+
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+pub enum MouseButtonKind {
+    Left,
+    Right,
+    Middle,
+    Back,
+    Forward,
+}
+
+#[derive(Default, Clone, Debug)]
+pub struct GamepadState {
+    pub left_stick: (f32, f32),
+    pub right_stick: (f32, f32),
+    pub dpad: (f32, f32),
+    pub pressed_buttons: HashSet<String>,
+}
+
+impl GamepadState {
+    pub fn is_idle(&self) -> bool {
+        self.left_stick == (0.0, 0.0)
+            && self.right_stick == (0.0, 0.0)
+            && self.dpad == (0.0, 0.0)
+            && self.pressed_buttons.is_empty()
+    }
+}
+
+/// A primitive output event with timing.
+/// `delay_ms` is the time to wait *before* posting this event, relative to
+/// the previous event in the batch. Zero means post immediately.
+#[derive(Debug, Clone, PartialEq)]
+pub struct OutputEvent {
+    pub delay_ms: u32,
+    pub kind: OutputEventKind,
+}
+
+impl OutputEvent {
+    pub fn immediate(kind: OutputEventKind) -> Self {
+        Self { delay_ms: 0, kind }
+    }
+
+    pub fn delayed(delay_ms: u32, kind: OutputEventKind) -> Self {
+        Self { delay_ms, kind }
+    }
+}
+
+/// Fully decomposed output event primitives.
+#[derive(Debug, Clone, PartialEq)]
+pub enum OutputEventKind {
+    MoveCursor { dx: f64, dy: f64 },
+    Scroll { dx: f64, dy: f64 },
+    MouseDown(MouseButtonKind),
+    MouseUp(MouseButtonKind),
+    KeyDown { keycode: u16, modifiers: Vec<Modifier> },
+    KeyUp { keycode: u16, modifiers: Vec<Modifier> },
+}
+
+/// Consumes a batch of output events and posts them to the OS.
+pub trait EventEmitter {
+    fn emit(&mut self, events: &[OutputEvent]);
+}
 
 pub const ALL_BUTTONS: &[(&str, &str)] = &[
     ("buttonA", "A"),
