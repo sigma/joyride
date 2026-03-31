@@ -9,9 +9,15 @@
   "id": "jr-veu.2",
   "labels": [],
   "parent": "jr-veu",
+  "comments": [
+    {
+      "text": "Implemented as part of jr-veu.1 — DoubleLeftClick and DoubleRightClick variants in Action enum, with MouseEmitter::double_click() using CGEvent click count fields.",
+      "timestamp": "2026-03-31T12:55:59Z"
+    }
+  ],
   "priority": 2,
   "status": "open",
   "title": "Double-click action",
   "type": "task",
-  "updated_at": "2026-03-31T10:00:51Z"
+  "updated_at": "2026-03-31T12:55:59Z"
 }
