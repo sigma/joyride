@@ -1,5 +1,5 @@
 {
-  "assignee": "",
+  "assignee": "unknown",
   "blocked_by": [],
   "blocks": [],
   "created": "2026-03-31T15:52:08Z",
@@ -7,8 +7,8 @@
   "id": "jr-g4i",
   "labels": [],
   "priority": 0,
-  "status": "open",
+  "status": "in_progress",
   "title": "Multiple buttons mapped to same MouseButtonKind causes premature release",
   "type": "bug",
-  "updated_at": "2026-03-31T15:52:08Z"
+  "updated_at": "2026-03-31T15:52:22Z"
 }
