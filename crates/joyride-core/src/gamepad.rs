@@ -126,12 +126,27 @@ impl GamepadManager {
                 .setValueChangedHandler(&*handler as *const _ as *mut _)
         };
 
-        // D-pad
+        // D-pad: store analog values and emit discrete button events
         let state = Rc::clone(&self.state);
         let debug = self.debug;
         let handler = RcBlock::new(
             move |_: NonNull<GCControllerDirectionPad>, x: c_float, y: c_float| {
-                state.borrow_mut().dpad = (x, y);
+                let mut s = state.borrow_mut();
+                s.dpad = (x, y);
+                // Emit discrete dpad button presses (threshold 0.5)
+                let threshold: c_float = 0.5;
+                for (name, active) in [
+                    ("dpadUp", y > threshold),
+                    ("dpadDown", y < -threshold),
+                    ("dpadRight", x > threshold),
+                    ("dpadLeft", x < -threshold),
+                ] {
+                    if active {
+                        s.pressed_buttons.insert(name.to_string());
+                    } else {
+                        s.pressed_buttons.remove(name);
+                    }
+                }
                 if debug {
                     eprintln!("joyride: D({x}, {y})");
                 }

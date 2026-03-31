@@ -150,11 +150,17 @@ extern "C" fn poll_callback(ctx_ptr: *mut c_void) {
         emitter.move_cursor(dx, dy);
     }
 
-    // D-pad: slow, precise cursor movement
+    // D-pad: slow, precise cursor movement (only for unmapped directions)
     let (dpx, dpy) = state.dpad;
-    if dpx.abs() > 0.1 || dpy.abs() > 0.1 {
-        let dx = dpx as f64 * settings.dpad_speed * dt;
-        let dy = -dpy as f64 * settings.dpad_speed * dt;
+    let dpad_x_mapped = !matches!(settings.button_map.get("dpadLeft"), Some(Action::None) | None)
+        || !matches!(settings.button_map.get("dpadRight"), Some(Action::None) | None);
+    let dpad_y_mapped = !matches!(settings.button_map.get("dpadUp"), Some(Action::None) | None)
+        || !matches!(settings.button_map.get("dpadDown"), Some(Action::None) | None);
+    let use_dpx = if dpad_x_mapped { 0.0 } else { dpx };
+    let use_dpy = if dpad_y_mapped { 0.0 } else { dpy };
+    if use_dpx.abs() > 0.1 || use_dpy.abs() > 0.1 {
+        let dx = use_dpx as f64 * settings.dpad_speed * dt;
+        let dy = -use_dpy as f64 * settings.dpad_speed * dt;
         emitter.move_cursor(dx, dy);
     }
 

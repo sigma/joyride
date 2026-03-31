@@ -7,7 +7,7 @@ use objc2::{define_class, msg_send, sel, DeclaredClass, MainThreadOnly};
 use objc2_app_kit::*;
 use objc2_foundation::*;
 
-use joyride_config::{format_value, Action, ALL_ACTIONS, ALL_BUTTONS};
+use joyride_config::{format_value, Action, ALL_ACTIONS, ALL_INPUTS};
 use joyride_core::settings::Settings;
 
 // MARK: - Window delegate
@@ -236,7 +236,7 @@ impl SettingsWindow {
         // -- Button Mapping --
         add_spacer(&stack, 8.0);
         add_header(&stack, "Button Mapping", mtm);
-        for (btn_id, btn_display) in ALL_BUTTONS {
+        for (btn_id, btn_display) in ALL_INPUTS {
             let current = s.button_map.get(*btn_id).map(|a| a.to_id()).unwrap_or("none");
             let (t, tm) = add_mapping(&stack, btn_display, settings, btn_id, current, mtm);
             retained.push(t); mappings.push(tm);

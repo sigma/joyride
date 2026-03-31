@@ -4,7 +4,7 @@ use std::rc::Rc;
 
 use objc2_foundation::{NSString, NSUserDefaults};
 
-use joyride_config::{Action, Config, ALL_BUTTONS};
+use joyride_config::{Action, Config, ALL_INPUTS};
 
 pub struct Settings {
     cli_defaults: Config,
@@ -35,12 +35,12 @@ impl Settings {
         // Build button map: load from UserDefaults per-button, fall back to CLI defaults
         let mut button_map = HashMap::new();
         let cli_defaults_map = cli.cli_button_map();
-        for (btn, _) in ALL_BUTTONS {
-            let key = format!("mapping.{btn}");
+        for (input, _) in ALL_INPUTS {
+            let key = format!("mapping.{input}");
             let action = ud_string(&ud, &key)
                 .map(|s| Action::from_id(&s))
-                .unwrap_or_else(|| cli_defaults_map.get(*btn).cloned().unwrap_or(Action::None));
-            button_map.insert(btn.to_string(), action);
+                .unwrap_or_else(|| cli_defaults_map.get(*input).cloned().unwrap_or(Action::None));
+            button_map.insert(input.to_string(), action);
         }
 
         let settings = Self {
@@ -93,8 +93,8 @@ impl Settings {
         for key in &keys {
             ud.removeObjectForKey(&NSString::from_str(key));
         }
-        for (btn, _) in ALL_BUTTONS {
-            ud.removeObjectForKey(&NSString::from_str(&format!("mapping.{btn}")));
+        for (input, _) in ALL_INPUTS {
+            ud.removeObjectForKey(&NSString::from_str(&format!("mapping.{input}")));
         }
 
         self.cursor_speed = self.cli_defaults.cursor_speed;
@@ -153,13 +153,13 @@ mod tests {
     }
 
     #[test]
-    fn default_button_map_has_all_buttons() {
+    fn default_button_map_has_all_inputs() {
         let settings = Settings::new(default_config());
         let s = settings.borrow();
-        for (btn_id, _) in ALL_BUTTONS {
+        for (input_id, _) in ALL_INPUTS {
             assert!(
-                s.button_map.contains_key(*btn_id),
-                "missing button mapping: {btn_id}"
+                s.button_map.contains_key(*input_id),
+                "missing input mapping: {input_id}"
             );
         }
     }
