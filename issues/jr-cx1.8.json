@@ -1,6 +1,8 @@
 {
   "assignee": "",
-  "blocked_by": [],
+  "blocked_by": [
+    "jr-cx1.7"
+  ],
   "blocks": [],
   "created": "2026-03-31T09:35:14Z",
   "description": "NSUserDefaults round-trip, UI smoke tests, edge cases",
@@ -11,5 +13,5 @@
   "status": "open",
   "title": "Add remaining tests",
   "type": "task",
-  "updated_at": "2026-03-31T09:35:14Z"
+  "updated_at": "2026-03-31T09:35:19Z"
 }
