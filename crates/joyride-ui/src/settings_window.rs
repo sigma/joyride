@@ -223,32 +223,15 @@ impl SettingsWindow {
             top: 20.0, left: 20.0, bottom: 20.0, right: 20.0,
         });
 
-        // -- Profile Selector --
+        // -- Profile Selector (display-only for now) --
         add_header(&stack, "Profile", mtm);
         {
-            let profile_popup = NSPopUpButton::initWithFrame_pullsDown(mtm.alloc(), NSRect::ZERO, false);
-            for (i, p) in s.profiles.iter().enumerate() {
-                let label = if i == s.active_profile_index() {
-                    format!("{} ●", p.name)
-                } else {
-                    p.name.clone()
-                };
-                profile_popup.addItemWithTitle(&NSString::from_str(&label));
-            }
-            profile_popup.selectItemAtIndex(s.active_profile_index() as isize);
-
-            // Profile selector target
-            let profile_target = mtm.alloc::<MappingTarget>().set_ivars(MappingIvars {
-                settings: Rc::clone(settings),
-                input_id: InputId::ButtonA,
-            });
-            let profile_target: Retained<MappingTarget> = unsafe { msg_send![super(profile_target), init] };
-            unsafe {
-                profile_popup.setTarget(Some(&profile_target));
-                profile_popup.setAction(Some(sel!(mappingChanged:)));
-            }
-            stack.addArrangedSubview(&profile_popup);
-            retained.push(Retained::into_super(profile_target));
+            let profile_name = &s.active().name;
+            let profile_label = NSTextField::labelWithString(
+                &NSString::from_str(&format!("Editing: {profile_name}")),
+                mtm,
+            );
+            stack.addArrangedSubview(&profile_label);
 
             // Bundle IDs for current profile
             let bundle_ids_str = s.active().bundle_ids.join(", ");
