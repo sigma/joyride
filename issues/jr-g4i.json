@@ -1,0 +1,14 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-03-31T15:52:08Z",
+  "description": "If buttonA and buttonB both map to LeftClick, pressing both then releasing one emits MouseUp even though the other is still held. Translator tracks state by MouseButtonKind, not by source button. Fix: count active sources per MouseButtonKind, only emit MouseUp when all sources are released. Tests: press A+B, release A (no MouseUp), release B (MouseUp). Press A, press B, release B (no MouseUp), release A (MouseUp).",
+  "id": "jr-g4i",
+  "labels": [],
+  "priority": 0,
+  "status": "open",
+  "title": "Multiple buttons mapped to same MouseButtonKind causes premature release",
+  "type": "bug",
+  "updated_at": "2026-03-31T15:52:08Z"
+}
