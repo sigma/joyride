@@ -9,9 +9,15 @@
   "id": "jr-m17.5",
   "labels": [],
   "parent": "jr-m17",
+  "comments": [
+    {
+      "text": "No cleanup needed — old edge-detection tests in mouse.rs were already removed during step 3 rewrite. All 18 translator tests cover the regressions.",
+      "timestamp": "2026-03-31T14:15:36Z"
+    }
+  ],
   "priority": 2,
   "status": "open",
   "title": "Test cleanup",
   "type": "task",
-  "updated_at": "2026-03-31T14:09:47Z"
+  "updated_at": "2026-03-31T14:15:36Z"
 }
