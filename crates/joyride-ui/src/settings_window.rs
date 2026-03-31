@@ -495,3 +495,15 @@ fn add_mapping(
     let tracked = TrackedMapping { popup, button_id: button_id.to_string() };
     (Retained::into_super(target), tracked)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn settings_window_new_has_no_window() {
+        let sw = SettingsWindow::new();
+        assert!(sw.window.is_none());
+        assert!(sw._retained.is_empty());
+    }
+}

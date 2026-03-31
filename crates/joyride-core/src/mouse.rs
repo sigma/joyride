@@ -124,16 +124,102 @@ impl MouseEmitter {
             max_y = max_y.max(bounds.origin.y + bounds.size.height);
         }
 
-        self.cursor_pos.x = self.cursor_pos.x.clamp(min_x, max_x - 1.0);
-        self.cursor_pos.y = self.cursor_pos.y.clamp(min_y, max_y - 1.0);
+        let (x, y) = clamp_point(
+            self.cursor_pos.x, self.cursor_pos.y,
+            min_x, min_y, max_x, max_y,
+        );
+        self.cursor_pos.x = x;
+        self.cursor_pos.y = y;
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+pub fn clamp_point(
+    px: f64, py: f64,
+    min_x: f64, min_y: f64,
+    max_x: f64, max_y: f64,
+) -> (f64, f64) {
+    (px.clamp(min_x, max_x - 1.0), py.clamp(min_y, max_y - 1.0))
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub enum MouseButtonKind {
     Left,
     Right,
     Middle,
     Back,
     Forward,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn mouse_emitter_constructs() {
+        let emitter = MouseEmitter::new();
+        assert!(emitter.button_state.is_empty());
+    }
+
+    #[test]
+    fn mouse_button_kind_all_variants() {
+        let variants = [
+            MouseButtonKind::Left,
+            MouseButtonKind::Right,
+            MouseButtonKind::Middle,
+            MouseButtonKind::Back,
+            MouseButtonKind::Forward,
+        ];
+        assert_eq!(variants.len(), 5);
+        for (i, a) in variants.iter().enumerate() {
+            for (j, b) in variants.iter().enumerate() {
+                assert_eq!(i == j, a == b);
+            }
+        }
+    }
+
+    #[test]
+    fn clamp_point_within_bounds() {
+        let (x, y) = clamp_point(500.0, 300.0, 0.0, 0.0, 1920.0, 1080.0);
+        assert_eq!(x, 500.0);
+        assert_eq!(y, 300.0);
+    }
+
+    #[test]
+    fn clamp_point_exceeds_max() {
+        let (x, y) = clamp_point(2000.0, 1200.0, 0.0, 0.0, 1920.0, 1080.0);
+        assert_eq!(x, 1919.0);
+        assert_eq!(y, 1079.0);
+    }
+
+    #[test]
+    fn clamp_point_below_min() {
+        let (x, y) = clamp_point(-50.0, -10.0, 0.0, 0.0, 1920.0, 1080.0);
+        assert_eq!(x, 0.0);
+        assert_eq!(y, 0.0);
+    }
+
+    #[test]
+    fn clamp_point_negative_origin() {
+        let (x, y) = clamp_point(-2000.0, 500.0, -1920.0, 0.0, 1920.0, 1080.0);
+        assert_eq!(x, -1920.0);
+        assert_eq!(y, 500.0);
+    }
+
+    #[test]
+    fn update_button_tracks_state() {
+        let mut emitter = MouseEmitter::new();
+        emitter.update_button(MouseButtonKind::Left, true);
+        assert_eq!(emitter.button_state.get(&MouseButtonKind::Left), Some(&true));
+        emitter.update_button(MouseButtonKind::Left, false);
+        assert_eq!(emitter.button_state.get(&MouseButtonKind::Left), Some(&false));
+    }
+
+    #[test]
+    fn update_button_idempotent() {
+        let mut emitter = MouseEmitter::new();
+        emitter.update_button(MouseButtonKind::Right, true);
+        // Second press should be no-op (returns early)
+        emitter.update_button(MouseButtonKind::Right, true);
+        assert_eq!(emitter.button_state.get(&MouseButtonKind::Right), Some(&true));
+    }
 }

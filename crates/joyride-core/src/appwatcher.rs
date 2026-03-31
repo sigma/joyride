@@ -74,3 +74,30 @@ impl AppWatcher {
         self.is_excluded_active.set(self.excluded.contains(&bundle_id));
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn new_empty_exclusion_list() {
+        let watcher = AppWatcher::new(&[]);
+        assert!(!watcher.is_excluded_active.get());
+        assert!(watcher.excluded.is_empty());
+    }
+
+    #[test]
+    fn new_with_exclusions() {
+        let ids = vec!["com.example.game".to_string()];
+        let watcher = AppWatcher::new(&ids);
+        assert!(!watcher.is_excluded_active.get());
+        assert!(watcher.excluded.contains("com.example.game"));
+    }
+
+    #[test]
+    fn exclusion_set_deduplicates() {
+        let ids = vec!["com.foo".to_string(), "com.foo".to_string(), "com.bar".to_string()];
+        let watcher = AppWatcher::new(&ids);
+        assert_eq!(watcher.excluded.len(), 2);
+    }
+}

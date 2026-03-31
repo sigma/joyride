@@ -184,3 +184,40 @@ impl GamepadManager {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn gamepad_state_default_zeroed() {
+        let state = GamepadState::default();
+        assert_eq!(state.left_stick, (0.0, 0.0));
+        assert_eq!(state.right_stick, (0.0, 0.0));
+        assert_eq!(state.dpad, (0.0, 0.0));
+        assert!(state.pressed_buttons.is_empty());
+    }
+
+    #[test]
+    fn gamepad_state_clone() {
+        let mut state = GamepadState::default();
+        state.left_stick = (0.5, -0.3);
+        state.pressed_buttons.insert("buttonA".to_string());
+        let cloned = state.clone();
+        assert_eq!(cloned.left_stick, (0.5, -0.3));
+        assert!(cloned.pressed_buttons.contains("buttonA"));
+    }
+
+    #[test]
+    fn gamepad_manager_constructs() {
+        let manager = GamepadManager::new(false);
+        let state = manager.state.borrow();
+        assert_eq!(state.left_stick, (0.0, 0.0));
+    }
+
+    #[test]
+    fn gamepad_manager_debug_mode() {
+        let manager = GamepadManager::new(true);
+        assert!(manager.debug);
+    }
+}

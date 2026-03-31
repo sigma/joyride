@@ -120,3 +120,97 @@ fn ud_bool(ud: &NSUserDefaults, key: &str) -> Option<bool> {
     let nskey = NSString::from_str(key);
     ud.objectForKey(&nskey).map(|_| ud.boolForKey(&nskey))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn default_config() -> Config {
+        Config::parse(&[]).unwrap()
+    }
+
+    #[test]
+    fn new_returns_cli_defaults() {
+        let config = default_config();
+        let settings = Settings::new(config);
+        let s = settings.borrow();
+        assert_eq!(s.cursor_speed, 1500.0);
+        assert_eq!(s.dpad_speed, 150.0);
+        assert_eq!(s.scroll_speed, 8.0);
+        assert_eq!(s.poll_hz, 120.0);
+        assert!((s.deadzone - 0.15).abs() < 1e-6);
+        assert!(!s.natural_scroll);
+        assert!(!s.debug);
+    }
+
+    #[test]
+    fn poll_interval_calculation() {
+        let settings = Settings::new(default_config());
+        let s = settings.borrow();
+        let expected = 1.0 / 120.0;
+        assert!((s.poll_interval() - expected).abs() < 1e-10);
+    }
+
+    #[test]
+    fn default_button_map_has_all_buttons() {
+        let settings = Settings::new(default_config());
+        let s = settings.borrow();
+        for (btn_id, _) in ALL_BUTTONS {
+            assert!(
+                s.button_map.contains_key(*btn_id),
+                "missing button mapping: {btn_id}"
+            );
+        }
+    }
+
+    #[test]
+    fn default_button_map_cli_assignments() {
+        let settings = Settings::new(default_config());
+        let s = settings.borrow();
+        assert_eq!(s.button_map.get("buttonA").unwrap(), "leftClick");
+        assert_eq!(s.button_map.get("buttonB").unwrap(), "rightClick");
+        assert_eq!(s.button_map.get("buttonX").unwrap(), "middleClick");
+        // Unassigned buttons default to "none"
+        assert_eq!(s.button_map.get("buttonY").unwrap(), "none");
+    }
+
+    #[test]
+    fn reset_to_defaults_restores_values() {
+        let settings = Settings::new(default_config());
+        {
+            let mut s = settings.borrow_mut();
+            s.cursor_speed = 9999.0;
+            s.natural_scroll = true;
+            s.button_map.insert("buttonA".to_string(), "none".to_string());
+            s.reset_to_defaults();
+        }
+        let s = settings.borrow();
+        assert_eq!(s.cursor_speed, 1500.0);
+        assert!(!s.natural_scroll);
+        assert_eq!(s.button_map.get("buttonA").unwrap(), "leftClick");
+    }
+
+    #[test]
+    fn save_and_reload_round_trip() {
+        // Save with modified values, then create new Settings and check persistence
+        let config = default_config();
+        let settings = Settings::new(config);
+        {
+            let mut s = settings.borrow_mut();
+            s.cursor_speed = 2500.0;
+            s.natural_scroll = true;
+            s.save();
+        }
+
+        // Create new settings — should pick up saved values from NSUserDefaults
+        let config2 = default_config();
+        let settings2 = Settings::new(config2);
+        let s2 = settings2.borrow();
+        assert_eq!(s2.cursor_speed, 2500.0);
+        assert!(s2.natural_scroll);
+
+        // Clean up: reset to defaults to avoid polluting other tests
+        drop(s2);
+        settings2.borrow_mut().reset_to_defaults();
+    }
+}
