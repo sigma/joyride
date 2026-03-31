@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::ffi::c_void;
 use std::time::Instant;
 
 use core_graphics::display::CGDisplay;
@@ -11,6 +12,15 @@ use core_graphics::geometry::CGPoint;
 
 pub use joyride_config::MouseButtonKind;
 use joyride_config::{EventEmitter, Modifier, OutputEvent, OutputEventKind};
+
+// libdispatch FFI for scheduling delayed events
+extern "C" {
+    fn dispatch_after(when: u64, queue: *const c_void, block: *const c_void);
+    fn dispatch_time(base: u64, delta: i64) -> u64;
+    static _dispatch_main_q: c_void;
+}
+const DISPATCH_TIME_NOW: u64 = 0;
+const NSEC_PER_MSEC: i64 = 1_000_000;
 
 fn source() -> CGEventSource {
     CGEventSource::new(CGEventSourceStateID::CombinedSessionState)
@@ -178,19 +188,97 @@ impl MouseEmitter {
 
 impl EventEmitter for MouseEmitter {
     fn emit(&mut self, events: &[OutputEvent]) {
+        // Cumulative delay for scheduling
+        let mut accumulated_delay_ms: u64 = 0;
+
         for event in events {
-            if event.delay_ms > 0 {
-                std::thread::sleep(std::time::Duration::from_millis(event.delay_ms as u64));
-            }
-            match &event.kind {
-                OutputEventKind::MoveCursor { dx, dy } => self.move_cursor(*dx, *dy),
-                OutputEventKind::Scroll { dx, dy } => self.scroll(*dx, *dy),
-                OutputEventKind::MouseDown(btn) => self.mouse_down(*btn),
-                OutputEventKind::MouseUp(btn) => self.mouse_up(*btn),
-                OutputEventKind::KeyDown { keycode, modifiers } => self.key_down(*keycode, modifiers),
-                OutputEventKind::KeyUp { keycode, modifiers } => self.key_up(*keycode, modifiers),
+            accumulated_delay_ms += event.delay_ms as u64;
+
+            if accumulated_delay_ms == 0 {
+                self.emit_single(&event.kind);
+            } else {
+                // Schedule via dispatch_after on the main queue
+                let kind = event.kind.clone();
+                let block = block2::RcBlock::new(move || {
+                    emit_standalone(&kind);
+                });
+                unsafe {
+                    let when = dispatch_time(
+                        DISPATCH_TIME_NOW,
+                        accumulated_delay_ms as i64 * NSEC_PER_MSEC,
+                    );
+                    let queue = &_dispatch_main_q as *const c_void;
+                    dispatch_after(when, queue, &*block as *const _ as *const c_void);
+                }
+                // Keep the block alive until dispatch copies it
+                std::mem::forget(block);
             }
         }
+    }
+}
+
+impl MouseEmitter {
+    fn emit_single(&mut self, kind: &OutputEventKind) {
+        match kind {
+            OutputEventKind::MoveCursor { dx, dy } => self.move_cursor(*dx, *dy),
+            OutputEventKind::Scroll { dx, dy } => self.scroll(*dx, *dy),
+            OutputEventKind::MouseDown(btn) => self.mouse_down(*btn),
+            OutputEventKind::MouseUp(btn) => self.mouse_up(*btn),
+            OutputEventKind::KeyDown { keycode, modifiers } => self.key_down(*keycode, modifiers),
+            OutputEventKind::KeyUp { keycode, modifiers } => self.key_up(*keycode, modifiers),
+        }
+    }
+}
+
+/// Emit a single event without needing a MouseEmitter reference.
+/// Used by dispatch_after blocks that can't capture &mut self.
+/// Mouse position is read fresh from the system for each event.
+fn emit_standalone(kind: &OutputEventKind) {
+    match kind {
+        OutputEventKind::MouseDown(btn) => post_mouse_standalone(*btn, true),
+        OutputEventKind::MouseUp(btn) => post_mouse_standalone(*btn, false),
+        OutputEventKind::KeyDown { keycode, modifiers } => {
+            let flags = modifiers_to_flags(modifiers);
+            if let Ok(event) = CGEvent::new_keyboard_event(source(), *keycode, true) {
+                event.set_flags(flags);
+                event.post(CGEventTapLocation::Session);
+            }
+        }
+        OutputEventKind::KeyUp { keycode, modifiers } => {
+            let flags = modifiers_to_flags(modifiers);
+            if let Ok(event) = CGEvent::new_keyboard_event(source(), *keycode, false) {
+                event.set_flags(flags);
+                event.post(CGEventTapLocation::Session);
+            }
+        }
+        // MoveCursor and Scroll shouldn't be delayed, but handle gracefully
+        _ => {}
+    }
+}
+
+fn post_mouse_standalone(button: MouseButtonKind, pressed: bool) {
+    let pos = CGEvent::new(source())
+        .map(|e| e.location())
+        .unwrap_or(CGPoint::new(0.0, 0.0));
+
+    let (event_type, cg_button, button_number) = match (button, pressed) {
+        (MouseButtonKind::Left, true) => (CGEventType::LeftMouseDown, CGMouseButton::Left, None),
+        (MouseButtonKind::Left, false) => (CGEventType::LeftMouseUp, CGMouseButton::Left, None),
+        (MouseButtonKind::Right, true) => (CGEventType::RightMouseDown, CGMouseButton::Right, None),
+        (MouseButtonKind::Right, false) => (CGEventType::RightMouseUp, CGMouseButton::Right, None),
+        (MouseButtonKind::Middle, true) => (CGEventType::OtherMouseDown, CGMouseButton::Center, Some(2)),
+        (MouseButtonKind::Middle, false) => (CGEventType::OtherMouseUp, CGMouseButton::Center, Some(2)),
+        (MouseButtonKind::Back, true) => (CGEventType::OtherMouseDown, CGMouseButton::Center, Some(3)),
+        (MouseButtonKind::Back, false) => (CGEventType::OtherMouseUp, CGMouseButton::Center, Some(3)),
+        (MouseButtonKind::Forward, true) => (CGEventType::OtherMouseDown, CGMouseButton::Center, Some(4)),
+        (MouseButtonKind::Forward, false) => (CGEventType::OtherMouseUp, CGMouseButton::Center, Some(4)),
+    };
+
+    if let Ok(event) = CGEvent::new_mouse_event(source(), event_type, pos, cg_button) {
+        if let Some(num) = button_number {
+            event.set_integer_value_field(EventField::MOUSE_EVENT_BUTTON_NUMBER, num);
+        }
+        event.post(CGEventTapLocation::Session);
     }
 }
 
