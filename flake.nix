@@ -53,6 +53,6 @@
         joyride = self.packages.${final.stdenv.system}.default;
       };
 
-      darwinModules.default = import ./nix/darwin-module.nix { inherit self; };
+      darwinModules.default = import ./nix/darwin-module.nix { joyridePackages = self.packages; };
     };
 }

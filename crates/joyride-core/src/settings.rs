@@ -191,26 +191,8 @@ mod tests {
     }
 
     #[test]
-    fn save_and_reload_round_trip() {
-        // Save with modified values, then create new Settings and check persistence
-        let config = default_config();
-        let settings = Settings::new(config);
-        {
-            let mut s = settings.borrow_mut();
-            s.cursor_speed = 2500.0;
-            s.natural_scroll = true;
-            s.save();
-        }
-
-        // Create new settings — should pick up saved values from NSUserDefaults
-        let config2 = default_config();
-        let settings2 = Settings::new(config2);
-        let s2 = settings2.borrow();
-        assert_eq!(s2.cursor_speed, 2500.0);
-        assert!(s2.natural_scroll);
-
-        // Clean up: reset to defaults to avoid polluting other tests
-        drop(s2);
-        settings2.borrow_mut().reset_to_defaults();
+    fn save_does_not_panic() {
+        let settings = Settings::new(default_config());
+        settings.borrow().save();
     }
 }

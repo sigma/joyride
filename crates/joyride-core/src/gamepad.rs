@@ -45,7 +45,7 @@ impl GamepadManager {
         let connect_block =
             RcBlock::new(move |notif: NonNull<NSNotification>| {
                 let notif = unsafe { notif.as_ref() };
-                let controller = unsafe { notif.object() };
+                let controller = notif.object();
                 if let Some(obj) = controller {
                     let gc: &GCController =
                         unsafe { &*(Retained::as_ptr(&obj) as *const GCController) };
@@ -53,7 +53,7 @@ impl GamepadManager {
                 }
             });
 
-        let center = unsafe { objc2_foundation::NSNotificationCenter::defaultCenter() };
+        let center = objc2_foundation::NSNotificationCenter::defaultCenter();
         let observer = unsafe {
             center.addObserverForName_object_queue_usingBlock(
                 Some(GCControllerDidConnectNotification),
@@ -71,7 +71,7 @@ impl GamepadManager {
 
         let controllers = unsafe { GCController::controllers() };
         if controllers.len() > 0 {
-            self.attach_controller(unsafe { &*controllers.objectAtIndex(0) });
+            self.attach_controller(&*controllers.objectAtIndex(0));
         }
     }
 

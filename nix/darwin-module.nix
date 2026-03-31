@@ -1,4 +1,4 @@
-{ self }:
+{ joyridePackages }:
 {
   config,
   lib,
@@ -10,7 +10,7 @@ let
   cfg = config.programs.joyride;
   appName = "joyride";
   appDir = "/Users/${cfg.user}/Applications/${appName}.app";
-  storePkg = self.packages.${pkgs.stdenv.system}.default;
+  storePkg = joyridePackages.${pkgs.stdenv.system}.default;
 in
 {
   options.programs.joyride = {

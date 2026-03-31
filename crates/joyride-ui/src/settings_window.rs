@@ -192,7 +192,7 @@ impl SettingsWindow {
                 window.makeKeyAndOrderFront(None);
                 let app = NSApplication::sharedApplication(mtm);
                 app.setActivationPolicy(NSApplicationActivationPolicy::Regular);
-                unsafe { app.activateIgnoringOtherApps(true) };
+                app.activate();
                 return;
             }
             self.window = None;
@@ -325,11 +325,11 @@ impl SettingsWindow {
         if let Some(content_view) = window.contentView() {
             stack.setTranslatesAutoresizingMaskIntoConstraints(false);
             let lc = stack.leadingAnchor().constraintEqualToAnchor(&content_view.leadingAnchor());
-            unsafe { lc.setActive(true) };
+            lc.setActive(true);
             let tc = stack.trailingAnchor().constraintEqualToAnchor(&content_view.trailingAnchor());
-            unsafe { tc.setActive(true) };
+            tc.setActive(true);
             let top = stack.topAnchor().constraintEqualToAnchor(&content_view.topAnchor());
-            unsafe { top.setActive(true) };
+            top.setActive(true);
 
             window.setInitialFirstResponder(Some(&content_view));
         }
@@ -341,7 +341,7 @@ impl SettingsWindow {
         let app = NSApplication::sharedApplication(mtm);
         app.setActivationPolicy(NSApplicationActivationPolicy::Regular);
         window.makeKeyAndOrderFront(None);
-        unsafe { app.activateIgnoringOtherApps(true) };
+        app.activate();
 
         self.window = Some(window);
         self._retained = retained;
@@ -354,8 +354,8 @@ const LABEL_WIDTH: f64 = 130.0;
 const VALUE_WIDTH: f64 = 70.0;
 
 fn add_header(stack: &NSStackView, title: &str, mtm: MainThreadMarker) {
-    let label = unsafe { NSTextField::labelWithString(&NSString::from_str(title), mtm) };
-    unsafe { label.setFont(Some(&NSFont::boldSystemFontOfSize(13.0))) };
+    let label = NSTextField::labelWithString(&NSString::from_str(title), mtm);
+    label.setFont(Some(&NSFont::boldSystemFontOfSize(13.0)));
     stack.addArrangedSubview(&label);
 }
 
@@ -363,7 +363,7 @@ fn add_spacer(stack: &NSStackView, height: f64) {
     let mtm = MainThreadMarker::new().unwrap();
     let spacer = NSView::new(mtm);
     let hc = spacer.heightAnchor().constraintEqualToConstant(height);
-    unsafe { hc.setActive(true) };
+    hc.setActive(true);
     stack.addArrangedSubview(&spacer);
 }
 
@@ -372,13 +372,12 @@ fn add_slider(
     field: &'static str, value: f64, min: f64, max: f64, format: &'static str,
     mtm: MainThreadMarker,
 ) -> (Retained<NSObject>, TrackedSlider) {
-    let value_label = unsafe {
-        NSTextField::labelWithString(&NSString::from_str(&format_value(value, format)), mtm)
-    };
+    let value_label =
+        NSTextField::labelWithString(&NSString::from_str(&format_value(value, format)), mtm);
     value_label.setSelectable(false);
-    unsafe { value_label.setFont(Some(&NSFont::monospacedDigitSystemFontOfSize_weight(12.0, 0.0))) };
+    value_label.setFont(Some(&NSFont::monospacedDigitSystemFontOfSize_weight(12.0, 0.0)));
     let vc = value_label.widthAnchor().constraintEqualToConstant(VALUE_WIDTH);
-    unsafe { vc.setActive(true) };
+    vc.setActive(true);
     value_label.setAlignment(NSTextAlignment::Right);
 
     let target = mtm.alloc::<SliderTarget>().set_ivars(SliderIvars {
@@ -394,9 +393,9 @@ fn add_slider(
     };
     slider.setContentHuggingPriority_forOrientation(1.0, NSLayoutConstraintOrientation::Horizontal);
 
-    let label = unsafe { NSTextField::labelWithString(&NSString::from_str(title), mtm) };
+    let label = NSTextField::labelWithString(&NSString::from_str(title), mtm);
     let lc = label.widthAnchor().constraintEqualToConstant(LABEL_WIDTH);
-    unsafe { lc.setActive(true) };
+    lc.setActive(true);
 
     let row = NSStackView::stackViewWithViews(
         &NSArray::from_retained_slice(&[
@@ -411,7 +410,7 @@ fn add_slider(
     row.setDistribution(NSStackViewDistribution::Fill);
     let wc: &NSView = &row;
     let wc = wc.widthAnchor().constraintGreaterThanOrEqualToConstant(400.0);
-    unsafe { wc.setActive(true) };
+    wc.setActive(true);
     stack.addArrangedSubview(&row);
 
     let tracked = TrackedSlider { slider, label: value_label, field, format };
@@ -434,9 +433,9 @@ fn add_toggle(
         switch.setAction(Some(sel!(toggleChanged:)));
     }
 
-    let label = unsafe { NSTextField::labelWithString(&NSString::from_str(title), mtm) };
+    let label = NSTextField::labelWithString(&NSString::from_str(title), mtm);
     let lc = label.widthAnchor().constraintEqualToConstant(LABEL_WIDTH);
-    unsafe { lc.setActive(true) };
+    lc.setActive(true);
 
     let row = NSStackView::stackViewWithViews(
         &NSArray::from_retained_slice(&[
@@ -463,7 +462,7 @@ fn add_mapping(
     });
     let target: Retained<MappingTarget> = unsafe { msg_send![super(target), init] };
 
-    let popup = unsafe { NSPopUpButton::initWithFrame_pullsDown(mtm.alloc(), NSRect::ZERO, false) };
+    let popup = NSPopUpButton::initWithFrame_pullsDown(mtm.alloc(), NSRect::ZERO, false);
     let mut selected_idx: isize = 0;
     for (i, (action_id, action_display)) in ALL_ACTIONS.iter().enumerate() {
         popup.addItemWithTitle(&NSString::from_str(action_display));
@@ -477,9 +476,9 @@ fn add_mapping(
         popup.setAction(Some(sel!(mappingChanged:)));
     }
 
-    let label = unsafe { NSTextField::labelWithString(&NSString::from_str(button_display), mtm) };
+    let label = NSTextField::labelWithString(&NSString::from_str(button_display), mtm);
     let lc = label.widthAnchor().constraintEqualToConstant(LABEL_WIDTH);
-    unsafe { lc.setActive(true) };
+    lc.setActive(true);
 
     let row = NSStackView::stackViewWithViews(
         &NSArray::from_retained_slice(&[
