@@ -61,7 +61,7 @@ fn main() {
     gamepad.start();
 
     let emitter = MouseEmitter::new();
-    let watcher = AppWatcher::new(&s.excluded_bundle_ids);
+    let watcher = AppWatcher::new();
     watcher.start();
 
     let statusbar = StatusBar::new(mtm, &gamepad, &settings);
@@ -113,8 +113,21 @@ extern "C" fn poll_callback(ctx_ptr: *mut c_void) {
     if !ctx.statusbar.is_enabled() {
         return;
     }
-    if ctx.watcher.is_excluded_active.get() {
-        return;
+
+    // Switch active profile based on frontmost app
+    {
+        let bundle_id = ctx.watcher.frontmost_bundle_id.borrow();
+        let mut settings = ctx.settings.borrow_mut();
+        let excluded = settings.excluded_bundle_ids.contains(&*bundle_id);
+        if excluded {
+            return;
+        }
+        let target = settings.profile_for_bundle_id(&bundle_id).unwrap_or(0);
+        if settings.active_profile != target {
+            let name = settings.profiles[target].name.clone();
+            eprintln!("joyride: switched to profile '{name}'");
+            settings.active_profile = target;
+        }
     }
 
     let state = ctx.gamepad.state.borrow();

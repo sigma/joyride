@@ -1,5 +1,4 @@
-use std::cell::Cell;
-use std::collections::HashSet;
+use std::cell::RefCell;
 use std::ptr::NonNull;
 use std::rc::Rc;
 
@@ -9,18 +8,15 @@ use objc2_app_kit::NSWorkspace;
 use objc2_foundation::{NSNotification, NSObjectProtocol, NSString};
 
 pub struct AppWatcher {
-    excluded: HashSet<String>,
-    pub is_excluded_active: Rc<Cell<bool>>,
+    /// The bundle ID of the currently frontmost application.
+    pub frontmost_bundle_id: Rc<RefCell<String>>,
     _observer: RefCell<Option<Retained<objc2::runtime::ProtocolObject<dyn NSObjectProtocol>>>>,
 }
 
-use std::cell::RefCell;
-
 impl AppWatcher {
-    pub fn new(excluded_ids: &[String]) -> Self {
+    pub fn new() -> Self {
         Self {
-            excluded: excluded_ids.iter().cloned().collect(),
-            is_excluded_active: Rc::new(Cell::new(false)),
+            frontmost_bundle_id: Rc::new(RefCell::new(String::new())),
             _observer: RefCell::new(None),
         }
     }
@@ -28,8 +24,7 @@ impl AppWatcher {
     pub fn start(&self) {
         self.check_frontmost();
 
-        let excluded = self.excluded.clone();
-        let is_excluded = Rc::clone(&self.is_excluded_active);
+        let frontmost = Rc::clone(&self.frontmost_bundle_id);
 
         let block = RcBlock::new(move |_notif: NonNull<NSNotification>| {
             let workspace = NSWorkspace::sharedWorkspace();
@@ -38,16 +33,7 @@ impl AppWatcher {
                 .and_then(|app| app.bundleIdentifier())
                 .map(|s| s.to_string())
                 .unwrap_or_default();
-            let was = is_excluded.get();
-            let now = excluded.contains(&bundle_id);
-            is_excluded.set(now);
-            if now != was {
-                if now {
-                    eprintln!("joyride: paused (gaming app: {bundle_id})");
-                } else {
-                    eprintln!("joyride: resumed");
-                }
-            }
+            *frontmost.borrow_mut() = bundle_id;
         });
 
         let workspace = NSWorkspace::sharedWorkspace();
@@ -71,7 +57,7 @@ impl AppWatcher {
             .and_then(|app| app.bundleIdentifier())
             .map(|s| s.to_string())
             .unwrap_or_default();
-        self.is_excluded_active.set(self.excluded.contains(&bundle_id));
+        *self.frontmost_bundle_id.borrow_mut() = bundle_id;
     }
 }
 
@@ -80,24 +66,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn new_empty_exclusion_list() {
-        let watcher = AppWatcher::new(&[]);
-        assert!(!watcher.is_excluded_active.get());
-        assert!(watcher.excluded.is_empty());
-    }
-
-    #[test]
-    fn new_with_exclusions() {
-        let ids = vec!["com.example.game".to_string()];
-        let watcher = AppWatcher::new(&ids);
-        assert!(!watcher.is_excluded_active.get());
-        assert!(watcher.excluded.contains("com.example.game"));
-    }
-
-    #[test]
-    fn exclusion_set_deduplicates() {
-        let ids = vec!["com.foo".to_string(), "com.foo".to_string(), "com.bar".to_string()];
-        let watcher = AppWatcher::new(&ids);
-        assert_eq!(watcher.excluded.len(), 2);
+    fn new_has_empty_frontmost() {
+        let watcher = AppWatcher::new();
+        assert!(watcher.frontmost_bundle_id.borrow().is_empty());
     }
 }
