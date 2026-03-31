@@ -6,14 +6,15 @@
   "blocks": [
     "jr-byo.5"
   ],
+  "closed_at": "2026-03-31T15:30:50Z",
   "created": "2026-03-31T15:24:47Z",
   "description": "darwin-module.nix uses /tmp/joyride.log which is lost on reboot. Use ~/Library/Logs/joyride.log.",
   "id": "jr-byo.4",
   "labels": [],
   "parent": "jr-byo",
   "priority": 2,
-  "status": "in_progress",
+  "status": "closed",
   "title": "Move log path from /tmp to persistent location",
   "type": "task",
-  "updated_at": "2026-03-31T15:30:34Z"
+  "updated_at": "2026-03-31T15:30:50Z"
 }
