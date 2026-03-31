@@ -2,13 +2,14 @@
   "assignee": "unknown",
   "blocked_by": [],
   "blocks": [],
+  "closed_at": "2026-03-31T15:59:43Z",
   "created": "2026-03-31T15:52:09Z",
   "description": "If dpadRight is mapped to an action, holding dpadLeft (unmapped) still suppresses horizontal cursor movement. The check uses per-axis logic. Fix: suppress only the mapped direction's contribution, not the entire axis. Tests: dpadRight mapped, hold dpadLeft, cursor should move left.",
   "id": "jr-mis",
   "labels": [],
   "priority": 1,
-  "status": "in_progress",
+  "status": "closed",
   "title": "D-pad cursor suppression is per-axis, not per-direction",
   "type": "bug",
-  "updated_at": "2026-03-31T15:58:18Z"
+  "updated_at": "2026-03-31T15:59:43Z"
 }
