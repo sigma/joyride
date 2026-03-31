@@ -1,6 +1,8 @@
 {
   "assignee": "",
-  "blocked_by": [],
+  "blocked_by": [
+    "jr-2m1.2"
+  ],
   "blocks": [],
   "created": "2026-03-31T10:00:20Z",
   "description": "Extend app watcher to look up profiles by frontmost app bundle ID. When a matching profile exists, switch to it. When no match, fall back to default. The existing exclude list becomes a special case (profile with all actions set to none, or a dedicated 'disabled' flag). Integrate with the polling loop so the active profile's settings are used each frame.",
@@ -11,5 +13,5 @@
   "status": "open",
   "title": "Per-app profile activation",
   "type": "task",
-  "updated_at": "2026-03-31T10:00:20Z"
+  "updated_at": "2026-03-31T10:00:25Z"
 }
