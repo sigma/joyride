@@ -4,14 +4,15 @@
     "jr-veu.1"
   ],
   "blocks": [],
+  "closed_at": "2026-03-31T13:07:55Z",
   "created": "2026-03-31T10:00:47Z",
   "description": "Allow mapping gamepad buttons to keyboard key combos (e.g. Cmd+A, Ctrl+Left). Use CGEvent::new_keyboard_event to emit key events. Support modifier keys (Cmd, Ctrl, Alt, Shift) combined with any key. The combo definition needs a compact representation for persistence and a readable display for the UI (e.g. 'A+Left' means press A and Left arrow simultaneously). Consider whether this means keyboard keys or mixed mouse+keyboard.",
   "id": "jr-veu.3",
   "labels": [],
   "parent": "jr-veu",
   "priority": 2,
-  "status": "in_progress",
+  "status": "closed",
   "title": "Key combo actions",
   "type": "task",
-  "updated_at": "2026-03-31T13:05:02Z"
+  "updated_at": "2026-03-31T13:07:55Z"
 }
