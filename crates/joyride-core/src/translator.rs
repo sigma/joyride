@@ -286,6 +286,8 @@ impl InputTranslator {
 }
 
 /// Map an Action variant to its MouseButtonKind, if applicable.
+/// Map an Action variant to its MouseButtonKind, if applicable.
+/// Exhaustive match — adding a new Action variant forces updating this.
 fn action_mouse_button(action: &Action) -> Option<MouseButtonKind> {
     match action {
         Action::LeftClick => Some(MouseButtonKind::Left),
@@ -293,7 +295,10 @@ fn action_mouse_button(action: &Action) -> Option<MouseButtonKind> {
         Action::MiddleClick => Some(MouseButtonKind::Middle),
         Action::BackClick => Some(MouseButtonKind::Back),
         Action::ForwardClick => Some(MouseButtonKind::Forward),
-        _ => None,
+        Action::None
+        | Action::DoubleLeftClick
+        | Action::DoubleRightClick
+        | Action::KeyPress(_) => None,
     }
 }
 
