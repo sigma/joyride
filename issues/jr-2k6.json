@@ -6,6 +6,7 @@
   "blocks": [
     "jr-cpk"
   ],
+  "closed_at": "2026-03-31T16:18:05Z",
   "created": "2026-03-31T15:52:09Z",
   "description": "InputTranslator has no concept of hold duration. It only knows was_pressed/is_pressed. Add per-button press timestamp tracking so actions can query 'how long has this been held'. Depends on Action redesign.",
   "id": "jr-2k6",
@@ -17,8 +18,8 @@
     }
   ],
   "priority": 2,
-  "status": "in_progress",
+  "status": "closed",
   "title": "Add duration tracking to translator for hold-based actions",
   "type": "task",
-  "updated_at": "2026-03-31T16:16:13Z"
+  "updated_at": "2026-03-31T16:18:05Z"
 }
