@@ -1,11 +1,3 @@
-mod appwatcher;
-mod config;
-mod gamepad;
-mod mouse;
-mod settings;
-mod settings_window;
-mod statusbar;
-
 use std::cell::RefCell;
 use std::ffi::c_void;
 use std::rc::Rc;
@@ -15,13 +7,12 @@ use core_foundation::base::TCFType;
 use objc2_app_kit::{NSApplication, NSApplicationActivationPolicy};
 use objc2_foundation::MainThreadMarker;
 
-use appwatcher::AppWatcher;
-use config::Config;
-use config::apply_deadzone;
-use gamepad::GamepadManager;
-use mouse::{MouseButtonKind, MouseEmitter};
-use settings::Settings;
-use statusbar::StatusBar;
+use joyride_config::{apply_deadzone, Config};
+use joyride_core::appwatcher::AppWatcher;
+use joyride_core::gamepad::GamepadManager;
+use joyride_core::mouse::{MouseButtonKind, MouseEmitter};
+use joyride_core::settings::Settings;
+use joyride_ui::statusbar::StatusBar;
 
 // Raw libdispatch FFI for timer
 extern "C" {

@@ -1,55 +1,19 @@
-[package]
-name = "joyride"
+[workspace]
+members = ["crates/*"]
+resolver = "2"
+
+[workspace.package]
 version = "0.1.0"
 edition = "2021"
 
-[dependencies]
+[workspace.dependencies]
+joyride-config = { path = "crates/joyride-config" }
+joyride-core = { path = "crates/joyride-core" }
+joyride-ui = { path = "crates/joyride-ui" }
 objc2 = "0.6"
-objc2-foundation = { version = "0.3", features = [
-    "NSNotification",
-    "NSString",
-    "NSUserDefaults",
-    "NSValue",
-    "NSThread",
-] }
-objc2-app-kit = { version = "0.3", features = [
-    "NSApplication",
-    "NSButton",
-    "NSCell",
-    "NSControl",
-    "NSEvent",
-    "NSFont",
-    "NSImage",
-    "NSMenu",
-    "NSMenuItem",
-    "NSResponder",
-    "NSRunningApplication",
-    "NSSlider",
-    "NSSliderCell",
-    "NSStackView",
-    "NSStatusBar",
-    "NSStatusBarButton",
-    "NSStatusItem",
-    "NSSwitch",
-    "NSText",
-    "NSTextField",
-    "NSTextFieldCell",
-    "NSView",
-    "NSWindow",
-    "NSPopUpButton",
-    "NSWorkspace",
-] }
-objc2-game-controller = { version = "0.3", features = [
-    "GCController",
-    "GCDevice",
-    "GCExtendedGamepad",
-    "GCControllerButtonInput",
-    "GCControllerAxisInput",
-    "GCControllerDirectionPad",
-    "GCControllerElement",
-    "GCPhysicalInputProfile",
-    "block2",
-] }
+objc2-foundation = "0.3"
+objc2-app-kit = "0.3"
+objc2-game-controller = "0.3"
 core-graphics = { version = "0.25", features = ["highsierra"] }
 core-foundation = "0.10"
 accessibility-sys = "0.2"

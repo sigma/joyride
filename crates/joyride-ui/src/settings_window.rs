@@ -7,8 +7,8 @@ use objc2::{define_class, msg_send, sel, DeclaredClass, MainThreadOnly};
 use objc2_app_kit::*;
 use objc2_foundation::*;
 
-use crate::config::format_value;
-use crate::settings::Settings;
+use joyride_config::{format_value, ALL_ACTIONS, ALL_BUTTONS};
+use joyride_core::settings::Settings;
 
 // MARK: - Window delegate
 
@@ -117,8 +117,8 @@ define_class!(
         fn mapping_changed(&self, sender: &NSPopUpButton) {
             let iv = self.ivars();
             let idx = sender.indexOfSelectedItem();
-            if idx >= 0 && (idx as usize) < crate::config::ALL_ACTIONS.len() {
-                let action = crate::config::ALL_ACTIONS[idx as usize].0;
+            if idx >= 0 && (idx as usize) < ALL_ACTIONS.len() {
+                let action = ALL_ACTIONS[idx as usize].0;
                 let mut s = iv.settings.borrow_mut();
                 s.button_map.insert(iv.button_name.clone(), action.to_string());
                 s.save();
@@ -234,7 +234,7 @@ impl SettingsWindow {
         // -- Button Mapping --
         add_spacer(&stack, 8.0);
         add_header(&stack, "Button Mapping", mtm);
-        for (btn_id, btn_display) in crate::config::ALL_BUTTONS {
+        for (btn_id, btn_display) in ALL_BUTTONS {
             let current = s.button_map.get(*btn_id).map(|s| s.as_str()).unwrap_or("none");
             let (t, tm) = add_mapping(&stack, btn_display, settings, btn_id, current, mtm);
             retained.push(t); mappings.push(tm);
@@ -291,7 +291,7 @@ impl SettingsWindow {
             }
             for tm in &mappings {
                 let action = s.button_map.get(&tm.button_id).map(|s| s.as_str()).unwrap_or("none");
-                let idx = crate::config::ALL_ACTIONS.iter()
+                let idx = ALL_ACTIONS.iter()
                     .position(|(id, _)| *id == action)
                     .unwrap_or(0);
                 tm.popup.selectItemAtIndex(idx as isize);
@@ -465,7 +465,7 @@ fn add_mapping(
 
     let popup = unsafe { NSPopUpButton::initWithFrame_pullsDown(mtm.alloc(), NSRect::ZERO, false) };
     let mut selected_idx: isize = 0;
-    for (i, (action_id, action_display)) in crate::config::ALL_ACTIONS.iter().enumerate() {
+    for (i, (action_id, action_display)) in ALL_ACTIONS.iter().enumerate() {
         popup.addItemWithTitle(&NSString::from_str(action_display));
         if *action_id == current_action {
             selected_idx = i as isize;

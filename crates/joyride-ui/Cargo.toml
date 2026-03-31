@@ -1,0 +1,40 @@
+[package]
+name = "joyride-ui"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+joyride-config.workspace = true
+joyride-core.workspace = true
+objc2.workspace = true
+objc2-foundation = { workspace = true, features = [
+    "NSNotification",
+    "NSString",
+    "NSThread",
+] }
+objc2-app-kit = { workspace = true, features = [
+    "NSApplication",
+    "NSButton",
+    "NSCell",
+    "NSControl",
+    "NSEvent",
+    "NSFont",
+    "NSImage",
+    "NSMenu",
+    "NSMenuItem",
+    "NSResponder",
+    "NSRunningApplication",
+    "NSSlider",
+    "NSSliderCell",
+    "NSStackView",
+    "NSStatusBar",
+    "NSStatusBarButton",
+    "NSStatusItem",
+    "NSSwitch",
+    "NSText",
+    "NSTextField",
+    "NSTextFieldCell",
+    "NSView",
+    "NSWindow",
+    "NSPopUpButton",
+] }

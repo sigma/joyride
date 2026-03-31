@@ -4,7 +4,7 @@ use std::rc::Rc;
 
 use objc2_foundation::{NSString, NSUserDefaults};
 
-use crate::config::{Config, ALL_BUTTONS};
+use joyride_config::{Config, ALL_BUTTONS};
 
 pub struct Settings {
     cli_defaults: Config,

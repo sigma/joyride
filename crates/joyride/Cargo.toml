@@ -1,0 +1,17 @@
+[package]
+name = "joyride"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+joyride-config.workspace = true
+joyride-core.workspace = true
+joyride-ui.workspace = true
+objc2-app-kit = { workspace = true, features = [
+    "NSApplication",
+] }
+objc2-foundation = { workspace = true, features = [
+    "NSThread",
+] }
+core-foundation.workspace = true
+accessibility-sys.workspace = true

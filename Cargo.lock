@@ -108,13 +108,41 @@ name = "joyride"
 version = "0.1.0"
 dependencies = [
  "accessibility-sys",
+ "core-foundation",
+ "joyride-config",
+ "joyride-core",
+ "joyride-ui",
+ "objc2-app-kit",
+ "objc2-foundation",
+]
+
+[[package]]
+name = "joyride-config"
+version = "0.1.0"
+
+[[package]]
+name = "joyride-core"
+version = "0.1.0"
+dependencies = [
  "block2",
  "core-foundation",
  "core-graphics",
+ "joyride-config",
  "objc2",
  "objc2-app-kit",
  "objc2-foundation",
  "objc2-game-controller",
+]
+
+[[package]]
+name = "joyride-ui"
+version = "0.1.0"
+dependencies = [
+ "joyride-config",
+ "joyride-core",
+ "objc2",
+ "objc2-app-kit",
+ "objc2-foundation",
 ]
 
 [[package]]

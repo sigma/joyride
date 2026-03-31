@@ -7,8 +7,8 @@ use objc2::{define_class, msg_send, sel, DeclaredClass};
 use objc2_app_kit::*;
 use objc2_foundation::{MainThreadMarker, NSString};
 
-use crate::gamepad::GamepadManager;
-use crate::settings::Settings;
+use joyride_core::gamepad::GamepadManager;
+use joyride_core::settings::Settings;
 use crate::settings_window::SettingsWindow;
 
 struct MenuTargetIvars {

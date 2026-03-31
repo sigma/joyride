@@ -1,0 +1,33 @@
+[package]
+name = "joyride-core"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+joyride-config.workspace = true
+objc2.workspace = true
+objc2-foundation = { workspace = true, features = [
+    "NSNotification",
+    "NSString",
+    "NSUserDefaults",
+    "NSValue",
+    "NSThread",
+] }
+objc2-game-controller = { workspace = true, features = [
+    "GCController",
+    "GCDevice",
+    "GCExtendedGamepad",
+    "GCControllerButtonInput",
+    "GCControllerAxisInput",
+    "GCControllerDirectionPad",
+    "GCControllerElement",
+    "GCPhysicalInputProfile",
+    "block2",
+] }
+objc2-app-kit = { workspace = true, features = [
+    "NSRunningApplication",
+    "NSWorkspace",
+] }
+core-graphics.workspace = true
+core-foundation.workspace = true
+block2.workspace = true
