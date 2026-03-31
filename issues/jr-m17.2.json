@@ -1,6 +1,8 @@
 {
   "assignee": "",
-  "blocked_by": [],
+  "blocked_by": [
+    "jr-m17.1"
+  ],
   "blocks": [],
   "created": "2026-03-31T14:09:41Z",
   "description": "New translator.rs in joyride-core. TranslatorConfig, InputTranslator::translate(). Comprehensive tests for all edge cases including the three regressions.",
@@ -11,5 +13,5 @@
   "status": "open",
   "title": "Add InputTranslator with tests",
   "type": "task",
-  "updated_at": "2026-03-31T14:09:41Z"
+  "updated_at": "2026-03-31T14:09:47Z"
 }

@@ -1,7 +1,9 @@
 {
   "assignee": "",
   "blocked_by": [],
-  "blocks": [],
+  "blocks": [
+    "jr-m17.2"
+  ],
   "created": "2026-03-31T14:09:41Z",
   "description": "Move MouseButtonKind and GamepadState to joyride-config. Add OutputEvent, OutputEventKind, EventEmitter trait. Re-export from joyride-core.",
   "id": "jr-m17.1",
@@ -11,5 +13,5 @@
   "status": "open",
   "title": "Move shared types to joyride-config",
   "type": "task",
-  "updated_at": "2026-03-31T14:09:41Z"
+  "updated_at": "2026-03-31T14:09:47Z"
 }
