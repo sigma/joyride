@@ -2,13 +2,14 @@
   "assignee": "unknown",
   "blocked_by": [],
   "blocks": [],
+  "closed_at": "2026-03-31T12:52:38Z",
   "created": "2026-03-31T10:00:57Z",
   "description": "After changing settings and closing the settings dialog, reopening it from the menu bar triggers an accessibility permission prompt. This is wrong — accessibility is already granted. The issue is that check_accessibility() is likely being called again on the code path that opens the settings window, or the act of bringing the app to Regular activation policy re-triggers the check. The fix should ensure check_accessibility() only runs once at startup, not on every window show.",
   "id": "jr-n19",
   "labels": [],
   "priority": 1,
-  "status": "in_progress",
+  "status": "closed",
   "title": "Spurious accessibility prompt when reopening settings",
   "type": "bug",
-  "updated_at": "2026-03-31T10:04:13Z"
+  "updated_at": "2026-03-31T12:52:38Z"
 }
