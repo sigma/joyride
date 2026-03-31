@@ -17,6 +17,7 @@ use objc2_foundation::MainThreadMarker;
 
 use appwatcher::AppWatcher;
 use config::Config;
+use config::apply_deadzone;
 use gamepad::GamepadManager;
 use mouse::{MouseButtonKind, MouseEmitter};
 use settings::Settings;
@@ -192,14 +193,6 @@ extern "C" fn poll_callback(ctx_ptr: *mut c_void) {
             emitter.update_button(mb, pressed);
         }
     }
-}
-
-fn apply_deadzone(value: f32, dz: f32) -> f32 {
-    if value.abs() <= dz {
-        return 0.0;
-    }
-    let sign = if value > 0.0 { 1.0 } else { -1.0 };
-    sign * (value.abs() - dz) / (1.0 - dz)
 }
 
 fn check_accessibility() {

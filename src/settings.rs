@@ -4,29 +4,7 @@ use std::rc::Rc;
 
 use objc2_foundation::{NSString, NSUserDefaults};
 
-use crate::config::Config;
-
-pub const ALL_BUTTONS: &[(&str, &str)] = &[
-    ("buttonA", "A"),
-    ("buttonB", "B"),
-    ("buttonX", "X"),
-    ("buttonY", "Y"),
-    ("leftShoulder", "LB"),
-    ("rightShoulder", "RB"),
-    ("leftTrigger", "LT"),
-    ("rightTrigger", "RT"),
-    ("buttonMenu", "Menu"),
-    ("buttonOptions", "Options"),
-];
-
-pub const ALL_ACTIONS: &[(&str, &str)] = &[
-    ("none", "None"),
-    ("leftClick", "Left Click"),
-    ("rightClick", "Right Click"),
-    ("middleClick", "Middle Click"),
-    ("backClick", "Back"),
-    ("forwardClick", "Forward"),
-];
+use crate::config::{Config, ALL_BUTTONS};
 
 pub struct Settings {
     cli_defaults: Config,
@@ -56,7 +34,7 @@ impl Settings {
 
         // Build button map: load from UserDefaults per-button, fall back to CLI defaults
         let mut button_map = HashMap::new();
-        let cli_defaults_map = Self::cli_button_map(&cli);
+        let cli_defaults_map = cli.cli_button_map();
         for (btn, _) in ALL_BUTTONS {
             let key = format!("mapping.{btn}");
             let action = ud_string(&ud, &key)
@@ -125,15 +103,7 @@ impl Settings {
         self.poll_hz = self.cli_defaults.poll_hz;
         self.natural_scroll = self.cli_defaults.natural_scroll;
         self.debug = self.cli_defaults.debug;
-        self.button_map = Self::cli_button_map(&self.cli_defaults);
-    }
-
-    fn cli_button_map(cli: &Config) -> HashMap<String, String> {
-        let mut m = HashMap::new();
-        m.insert(cli.left_click.clone(), "leftClick".into());
-        m.insert(cli.right_click.clone(), "rightClick".into());
-        m.insert(cli.middle_click.clone(), "middleClick".into());
-        m
+        self.button_map = self.cli_defaults.cli_button_map();
     }
 }
 
