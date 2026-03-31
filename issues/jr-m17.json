@@ -1,0 +1,14 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-03-31T14:09:33Z",
+  "description": "Separate input translation logic from I/O. InputTranslator takes GamepadState + config + dt and produces Vec\u003cOutputEvent\u003e. OutputEvent is decomposed into timed primitives (MouseDown/Up, KeyDown/Up, MoveCursor, Scroll). Emitter becomes stateless event dispatcher behind EventEmitter trait.\n\n```mermaid\ngraph LR\n    1[Move shared types to config] --\u003e 2[Add InputTranslator + tests]\n    2 --\u003e 3[Refactor MouseEmitter]\n    3 --\u003e 4[Rewire poll_callback]\n    4 --\u003e 5[Test cleanup]\n```",
+  "id": "jr-m17",
+  "labels": [],
+  "priority": 0,
+  "status": "open",
+  "title": "Extract testable InputTranslator",
+  "type": "epic",
+  "updated_at": "2026-03-31T14:09:33Z"
+}
