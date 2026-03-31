@@ -1,6 +1,8 @@
 {
   "assignee": "",
-  "blocked_by": [],
+  "blocked_by": [
+    "jr-m17.2"
+  ],
   "blocks": [],
   "created": "2026-03-31T14:09:42Z",
   "description": "Strip edge-detection state from MouseEmitter. Implement EventEmitter trait. Derive click_count from timing. Handle delayed events via dispatch_after.",
@@ -11,5 +13,5 @@
   "status": "open",
   "title": "Refactor MouseEmitter as EventEmitter",
   "type": "task",
-  "updated_at": "2026-03-31T14:09:42Z"
+  "updated_at": "2026-03-31T14:09:47Z"
 }
