@@ -1,7 +1,9 @@
 {
   "assignee": "",
   "blocked_by": [],
-  "blocks": [],
+  "blocks": [
+    "jr-veu.2"
+  ],
   "created": "2026-03-31T10:00:47Z",
   "description": "Refactor the current action model from simple string-to-MouseButtonKind mapping to a richer Action enum that can represent: single click, double click, key press, key combo (modifier+key), and mouse+key combos. The action enum needs to be serializable for persistence and displayable for the UI. Update ALL_ACTIONS to be extensible rather than a fixed slice. The poll_callback button dispatch needs to handle actions that involve timing (double-click) or multiple events (combos).",
   "id": "jr-veu.1",
@@ -11,5 +13,5 @@
   "status": "open",
   "title": "Action system refactor",
   "type": "task",
-  "updated_at": "2026-03-31T10:00:47Z"
+  "updated_at": "2026-03-31T10:00:51Z"
 }
