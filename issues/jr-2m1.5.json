@@ -4,14 +4,15 @@
     "jr-2m1.3"
   ],
   "blocks": [],
+  "closed_at": "2026-03-31T13:05:00Z",
   "created": "2026-03-31T10:00:20Z",
   "description": "When Menu+Options are pressed simultaneously, lock to the default profile and disable auto-switching. Show a visual indicator in the status bar (e.g. different icon or tooltip). Pressing Menu+Options again re-enables auto-switching. The combo detection happens in the polling loop by checking pressed_buttons for both buttonMenu and buttonOptions in the same frame.",
   "id": "jr-2m1.5",
   "labels": [],
   "parent": "jr-2m1",
   "priority": 2,
-  "status": "in_progress",
+  "status": "closed",
   "title": "Manual override combo (Menu+Options)",
   "type": "task",
-  "updated_at": "2026-03-31T13:04:01Z"
+  "updated_at": "2026-03-31T13:05:00Z"
 }
