@@ -99,7 +99,8 @@ impl StatusBar {
         let menu = NSMenu::new(mtm);
 
         let info_item = NSMenuItem::new(mtm);
-        info_item.setTitle(&NSString::from_str("joyride"));
+        let version = env!("CARGO_PKG_VERSION");
+        info_item.setTitle(&NSString::from_str(&format!("joyride v{version}")));
         info_item.setEnabled(false);
         menu.addItem(&info_item);
         menu.addItem(&NSMenuItem::separatorItem(mtm));

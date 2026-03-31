@@ -56,12 +56,23 @@ in
     # Copy app bundle to ~/Applications and sign for stable TCC permissions.
     system.activationScripts.postActivation.text = ''
       echo >&2 "installing ${appName}.app..."
+
+      # Stop the running instance before replacing the binary
+      launchctl bootout gui/$(id -u ${cfg.user})/org.nixos.${appName} 2>/dev/null || true
+
       mkdir -p "${appDir}/Contents/MacOS"
       mkdir -p "${appDir}/Contents/Resources"
       cp "${storePkg}/Applications/${appName}.app/Contents/MacOS/${appName}" "${appDir}/Contents/MacOS/"
       cp "${storePkg}/Applications/${appName}.app/Contents/Info.plist" "${appDir}/Contents/"
       cp "${storePkg}/Applications/${appName}.app/Contents/Resources/AppIcon.icns" "${appDir}/Contents/Resources/"
       /usr/bin/codesign --force --sign - --identifier dev.${appName} "${appDir}"
+
+      # Reset accessibility TCC entry so the new binary is recognized.
+      # The user will get a one-time prompt on next launch.
+      tccutil reset Accessibility dev.${appName} 2>/dev/null || true
+
+      # Restart the service with the new binary
+      launchctl bootstrap gui/$(id -u ${cfg.user}) /Library/LaunchAgents/org.nixos.${appName}.plist 2>/dev/null || true
     '';
 
     launchd.user.agents.joyride = {
@@ -85,7 +96,9 @@ in
           ++ optionals cfg.naturalScroll [
             "--natural-scroll"
           ];
-        KeepAlive = true;
+        KeepAlive = {
+          SuccessfulExit = false;
+        };
         RunAtLoad = true;
         StandardOutPath = "/tmp/joyride.log";
         StandardErrorPath = "/tmp/joyride.log";
