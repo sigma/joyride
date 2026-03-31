@@ -115,16 +115,23 @@ impl InputTranslator {
             events.push(OutputEvent::immediate(OutputEventKind::MoveCursor { dx, dy }));
         }
 
-        // D-pad: slow, precise cursor movement (only for unmapped directions)
+        // D-pad: slow, precise cursor movement.
+        // Suppress only the contribution from mapped directions, not the entire axis.
         let (dpx, dpy) = state.dpad;
-        let dpad_x_mapped =
-            !matches!(config.button_map.get("dpadLeft"), Some(Action::None) | None)
-                || !matches!(config.button_map.get("dpadRight"), Some(Action::None) | None);
-        let dpad_y_mapped =
-            !matches!(config.button_map.get("dpadUp"), Some(Action::None) | None)
-                || !matches!(config.button_map.get("dpadDown"), Some(Action::None) | None);
-        let use_dpx = if dpad_x_mapped { 0.0 } else { dpx };
-        let use_dpy = if dpad_y_mapped { 0.0 } else { dpy };
+        let left_mapped = !matches!(config.button_map.get("dpadLeft"), Some(Action::None) | None);
+        let right_mapped = !matches!(config.button_map.get("dpadRight"), Some(Action::None) | None);
+        let up_mapped = !matches!(config.button_map.get("dpadUp"), Some(Action::None) | None);
+        let down_mapped = !matches!(config.button_map.get("dpadDown"), Some(Action::None) | None);
+        let use_dpx = if (dpx < 0.0 && left_mapped) || (dpx > 0.0 && right_mapped) {
+            0.0
+        } else {
+            dpx
+        };
+        let use_dpy = if (dpy > 0.0 && up_mapped) || (dpy < 0.0 && down_mapped) {
+            0.0
+        } else {
+            dpy
+        };
         if use_dpx.abs() > 0.1 || use_dpy.abs() > 0.1 {
             let dx = use_dpx as f64 * config.dpad_speed * dt;
             let dy = -use_dpy as f64 * config.dpad_speed * dt;
@@ -335,6 +342,35 @@ mod tests {
         // Should have MouseDown but no MoveCursor from dpad
         let move_events: Vec<_> = events.iter().filter(|e| matches!(e.kind, OutputEventKind::MoveCursor { .. })).collect();
         assert!(move_events.is_empty());
+    }
+
+    #[test]
+    fn dpad_mapped_right_does_not_suppress_left_cursor() {
+        let mut t = InputTranslator::new();
+        let mut state = GamepadState::default();
+        // Holding left on d-pad (negative x)
+        state.dpad = (-1.0, 0.0);
+        // dpadRight is mapped, but dpadLeft is NOT
+        let config = config_with_map(vec![("dpadRight", Action::LeftClick)]);
+        let events = t.translate(&state, &config, 1.0 / 120.0);
+        // Should produce cursor movement (left is unmapped)
+        let move_events: Vec<_> = events.iter().filter(|e| matches!(e.kind, OutputEventKind::MoveCursor { .. })).collect();
+        assert!(!move_events.is_empty(), "unmapped dpadLeft should still move cursor");
+        // Verify movement is in the negative-x direction
+        if let OutputEventKind::MoveCursor { dx, .. } = &move_events[0].kind {
+            assert!(*dx < 0.0, "cursor should move left");
+        }
+    }
+
+    #[test]
+    fn dpad_mapped_up_does_not_suppress_down_cursor() {
+        let mut t = InputTranslator::new();
+        let mut state = GamepadState::default();
+        state.dpad = (0.0, -1.0); // holding down
+        let config = config_with_map(vec![("dpadUp", Action::RightClick)]);
+        let events = t.translate(&state, &config, 1.0 / 120.0);
+        let move_events: Vec<_> = events.iter().filter(|e| matches!(e.kind, OutputEventKind::MoveCursor { .. })).collect();
+        assert!(!move_events.is_empty(), "unmapped dpadDown should still move cursor");
     }
 
     // -- Scroll --
