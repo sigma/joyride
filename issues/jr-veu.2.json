@@ -4,6 +4,7 @@
     "jr-veu.1"
   ],
   "blocks": [],
+  "closed_at": "2026-03-31T12:55:59Z",
   "created": "2026-03-31T10:00:47Z",
   "description": "Implement a doubleLeftClick (and potentially doubleRightClick) action. On button press, emit two rapid click-down/click-up sequences with a short delay between them (system double-click interval). This needs CGEvent pairs with proper timing — either via a short dispatch_after or by tracking state across poll frames.",
   "id": "jr-veu.2",
@@ -16,7 +17,7 @@
     }
   ],
   "priority": 2,
-  "status": "open",
+  "status": "closed",
   "title": "Double-click action",
   "type": "task",
   "updated_at": "2026-03-31T12:55:59Z"
