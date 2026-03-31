@@ -1,0 +1,15 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-03-31T14:09:42Z",
+  "description": "Move edge-detection tests from mouse.rs to translator.rs. Verify all regression tests are in translator.",
+  "id": "jr-m17.5",
+  "labels": [],
+  "parent": "jr-m17",
+  "priority": 2,
+  "status": "open",
+  "title": "Test cleanup",
+  "type": "task",
+  "updated_at": "2026-03-31T14:09:42Z"
+}
