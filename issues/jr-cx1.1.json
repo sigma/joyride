@@ -4,14 +4,15 @@
   "blocks": [
     "jr-cx1.2"
   ],
+  "closed_at": "2026-03-31T09:37:50Z",
   "created": "2026-03-31T09:35:14Z",
   "description": "Refactor Config::from_args into testable parse(), extract apply_deadzone, add #[cfg(test)] modules",
   "id": "jr-cx1.1",
   "labels": [],
   "parent": "jr-cx1",
   "priority": 2,
-  "status": "in_progress",
+  "status": "closed",
   "title": "Add tests to single-crate layout",
   "type": "task",
-  "updated_at": "2026-03-31T09:35:23Z"
+  "updated_at": "2026-03-31T09:37:50Z"
 }
