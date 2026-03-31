@@ -2,13 +2,14 @@
   "assignee": "unknown",
   "blocked_by": [],
   "blocks": [],
+  "closed_at": "2026-03-31T16:11:41Z",
   "created": "2026-03-31T15:52:09Z",
   "description": "All output is eprintln. Add log levels (debug/info/warn/error), consider using the log crate with a simple stderr+file backend. Enable debug logging via the existing --debug flag.",
   "id": "jr-8w9",
   "labels": [],
   "priority": 3,
-  "status": "in_progress",
+  "status": "closed",
   "title": "Add structured logging with levels",
   "type": "task",
-  "updated_at": "2026-03-31T16:08:53Z"
+  "updated_at": "2026-03-31T16:11:41Z"
 }
