@@ -11,8 +11,8 @@ use objc2::rc::Retained;
 use objc2::runtime::Bool;
 use objc2_foundation::{NSNotification, NSObjectProtocol};
 use objc2_game_controller::{
-    GCController, GCControllerButtonInput, GCControllerDirectionPad,
-    GCControllerDidConnectNotification, GCDevice,
+    GCController, GCControllerButtonInput, GCControllerDidConnectNotification,
+    GCControllerDirectionPad, GCDevice,
 };
 
 pub use joyride_config::GamepadState;
@@ -40,16 +40,15 @@ impl GamepadManager {
         }
 
         let this = Rc::clone(self);
-        let connect_block =
-            RcBlock::new(move |notif: NonNull<NSNotification>| {
-                let notif = unsafe { notif.as_ref() };
-                let controller = notif.object();
-                if let Some(obj) = controller {
-                    let gc: &GCController =
-                        unsafe { &*(Retained::as_ptr(&obj) as *const GCController) };
-                    this.attach_controller(gc);
-                }
-            });
+        let connect_block = RcBlock::new(move |notif: NonNull<NSNotification>| {
+            let notif = unsafe { notif.as_ref() };
+            let controller = notif.object();
+            if let Some(obj) = controller {
+                let gc: &GCController =
+                    unsafe { &*(Retained::as_ptr(&obj) as *const GCController) };
+                this.attach_controller(gc);
+            }
+        });
 
         let center = objc2_foundation::NSNotificationCenter::defaultCenter();
         let observer = unsafe {

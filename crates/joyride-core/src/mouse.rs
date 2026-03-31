@@ -80,14 +80,9 @@ impl MouseEmitter {
     }
 
     fn scroll(&self, dx: f64, dy: f64) {
-        if let Ok(event) = CGEvent::new_scroll_event(
-            source(),
-            ScrollEventUnit::PIXEL,
-            2,
-            dy as i32,
-            dx as i32,
-            0,
-        ) {
+        if let Ok(event) =
+            CGEvent::new_scroll_event(source(), ScrollEventUnit::PIXEL, 2, dy as i32, dx as i32, 0)
+        {
             event.post(CGEventTapLocation::Session);
         }
     }
@@ -123,19 +118,39 @@ impl MouseEmitter {
 
     fn post_mouse_event(&self, button: MouseButtonKind, pressed: bool, click_count: i64) {
         let (event_type, cg_button, button_number) = match (button, pressed) {
-            (MouseButtonKind::Left, true) => (CGEventType::LeftMouseDown, CGMouseButton::Left, None),
+            (MouseButtonKind::Left, true) => {
+                (CGEventType::LeftMouseDown, CGMouseButton::Left, None)
+            }
             (MouseButtonKind::Left, false) => (CGEventType::LeftMouseUp, CGMouseButton::Left, None),
-            (MouseButtonKind::Right, true) => (CGEventType::RightMouseDown, CGMouseButton::Right, None),
-            (MouseButtonKind::Right, false) => (CGEventType::RightMouseUp, CGMouseButton::Right, None),
-            (MouseButtonKind::Middle, true) => (CGEventType::OtherMouseDown, CGMouseButton::Center, Some(2)),
-            (MouseButtonKind::Middle, false) => (CGEventType::OtherMouseUp, CGMouseButton::Center, Some(2)),
-            (MouseButtonKind::Back, true) => (CGEventType::OtherMouseDown, CGMouseButton::Center, Some(3)),
-            (MouseButtonKind::Back, false) => (CGEventType::OtherMouseUp, CGMouseButton::Center, Some(3)),
-            (MouseButtonKind::Forward, true) => (CGEventType::OtherMouseDown, CGMouseButton::Center, Some(4)),
-            (MouseButtonKind::Forward, false) => (CGEventType::OtherMouseUp, CGMouseButton::Center, Some(4)),
+            (MouseButtonKind::Right, true) => {
+                (CGEventType::RightMouseDown, CGMouseButton::Right, None)
+            }
+            (MouseButtonKind::Right, false) => {
+                (CGEventType::RightMouseUp, CGMouseButton::Right, None)
+            }
+            (MouseButtonKind::Middle, true) => {
+                (CGEventType::OtherMouseDown, CGMouseButton::Center, Some(2))
+            }
+            (MouseButtonKind::Middle, false) => {
+                (CGEventType::OtherMouseUp, CGMouseButton::Center, Some(2))
+            }
+            (MouseButtonKind::Back, true) => {
+                (CGEventType::OtherMouseDown, CGMouseButton::Center, Some(3))
+            }
+            (MouseButtonKind::Back, false) => {
+                (CGEventType::OtherMouseUp, CGMouseButton::Center, Some(3))
+            }
+            (MouseButtonKind::Forward, true) => {
+                (CGEventType::OtherMouseDown, CGMouseButton::Center, Some(4))
+            }
+            (MouseButtonKind::Forward, false) => {
+                (CGEventType::OtherMouseUp, CGMouseButton::Center, Some(4))
+            }
         };
 
-        if let Ok(event) = CGEvent::new_mouse_event(source(), event_type, self.cursor_pos, cg_button) {
+        if let Ok(event) =
+            CGEvent::new_mouse_event(source(), event_type, self.cursor_pos, cg_button)
+        {
             event.set_integer_value_field(EventField::MOUSE_EVENT_CLICK_STATE, click_count);
             if let Some(num) = button_number {
                 event.set_integer_value_field(EventField::MOUSE_EVENT_BUTTON_NUMBER, num);
@@ -180,8 +195,12 @@ impl MouseEmitter {
         }
 
         let (x, y) = clamp_point(
-            self.cursor_pos.x, self.cursor_pos.y,
-            min_x, min_y, max_x, max_y,
+            self.cursor_pos.x,
+            self.cursor_pos.y,
+            min_x,
+            min_y,
+            max_x,
+            max_y,
         );
         self.cursor_pos.x = x;
         self.cursor_pos.y = y;
@@ -257,11 +276,7 @@ impl MouseEmitter {
 }
 
 /// Clamp a point to within display bounds, leaving 1px margin at max edges.
-pub fn clamp_point(
-    px: f64, py: f64,
-    min_x: f64, min_y: f64,
-    max_x: f64, max_y: f64,
-) -> (f64, f64) {
+pub fn clamp_point(px: f64, py: f64, min_x: f64, min_y: f64, max_x: f64, max_y: f64) -> (f64, f64) {
     (px.clamp(min_x, max_x - 1.0), py.clamp(min_y, max_y - 1.0))
 }
 

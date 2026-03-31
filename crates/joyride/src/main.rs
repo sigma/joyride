@@ -17,7 +17,7 @@ use joyride_core::settings::Settings;
 use joyride_core::translator::{InputTranslator, TranslatorConfig};
 use joyride_ui::statusbar::StatusBar;
 
-use objc2_app_kit::{NSImage};
+use objc2_app_kit::NSImage;
 use objc2_foundation::NSString;
 
 // Raw libdispatch FFI for timer
@@ -94,7 +94,9 @@ fn main() {
 
     eprintln!(
         "joyride: running (poll={}Hz, cursor={}, scroll={})",
-        s.poll_hz() as u32, s.cursor_speed(), s.scroll_speed()
+        s.poll_hz() as u32,
+        s.cursor_speed(),
+        s.scroll_speed()
     );
     if !s.excluded_bundle_ids.is_empty() {
         eprintln!(
@@ -126,12 +128,8 @@ fn main() {
 
     unsafe {
         let queue = &_dispatch_main_q as *const c_void;
-        let timer = dispatch_source_create(
-            &_dispatch_source_type_timer as *const c_void,
-            0,
-            0,
-            queue,
-        );
+        let timer =
+            dispatch_source_create(&_dispatch_source_type_timer as *const c_void, 0, 0, queue);
         dispatch_source_set_timer(timer, DISPATCH_TIME_NOW, interval_ns, 0);
         dispatch_set_context(timer, ctx_ptr);
         dispatch_source_set_event_handler_f(timer, poll_callback);
@@ -151,8 +149,12 @@ extern "C" fn poll_callback(ctx_ptr: *mut c_void) {
     // Detect Menu+Options combo for profile lock toggle
     {
         let state = ctx.gamepad.state.borrow();
-        let combo_held = state.pressed_buttons.contains(&joyride_config::InputId::ButtonMenu)
-            && state.pressed_buttons.contains(&joyride_config::InputId::ButtonOptions);
+        let combo_held = state
+            .pressed_buttons
+            .contains(&joyride_config::InputId::ButtonMenu)
+            && state
+                .pressed_buttons
+                .contains(&joyride_config::InputId::ButtonOptions);
         let mut was_held = ctx.lock_combo_was_held.borrow_mut();
         if combo_held && !*was_held {
             let mut settings = ctx.settings.borrow_mut();
@@ -206,7 +208,10 @@ extern "C" fn poll_callback(ctx_ptr: *mut c_void) {
         let current_gen = settings.generation;
         let mut cached_idx = ctx.cached_profile_idx.borrow_mut();
         let mut cached_gen = ctx.cached_generation.borrow_mut();
-        if *cached_idx != current_idx || *cached_gen != current_gen || ctx.cached_config.borrow().is_none() {
+        if *cached_idx != current_idx
+            || *cached_gen != current_gen
+            || ctx.cached_config.borrow().is_none()
+        {
             *cached_idx = current_idx;
             *cached_gen = current_gen;
             let new_config = TranslatorConfig {
@@ -245,19 +250,17 @@ fn check_accessibility() {
     warn!("Accessibility permission not granted — requesting once");
     let key = core_foundation::string::CFString::new("AXTrustedCheckOptionPrompt");
     let value = core_foundation::boolean::CFBoolean::true_value();
-    let opts = core_foundation::dictionary::CFDictionary::from_CFType_pairs(&[(
-        key,
-        value.as_CFType(),
-    )]);
+    let opts =
+        core_foundation::dictionary::CFDictionary::from_CFType_pairs(&[(key, value.as_CFType())]);
     unsafe {
-        accessibility_sys::AXIsProcessTrustedWithOptions(
-            opts.as_concrete_TypeRef() as *const _,
-        );
+        accessibility_sys::AXIsProcessTrustedWithOptions(opts.as_concrete_TypeRef() as *const _);
     }
     std::thread::sleep(std::time::Duration::from_secs(1));
     if unsafe { accessibility_sys::AXIsProcessTrusted() } {
         info!("Accessibility permission granted");
     } else {
-        warn!("Accessibility permission still pending — cursor control will not work until granted");
+        warn!(
+            "Accessibility permission still pending — cursor control will not work until granted"
+        );
     }
 }

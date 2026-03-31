@@ -220,7 +220,10 @@ impl SettingsWindow {
         stack.setAlignment(NSLayoutAttribute::Leading);
         stack.setSpacing(8.0);
         stack.setEdgeInsets(NSEdgeInsets {
-            top: 20.0, left: 20.0, bottom: 20.0, right: 20.0,
+            top: 20.0,
+            left: 20.0,
+            bottom: 20.0,
+            right: 20.0,
         });
 
         // -- Profile Selector (display-only for now) --
@@ -235,12 +238,17 @@ impl SettingsWindow {
 
             // Bundle IDs for current profile
             let bundle_ids_str = s.active().bundle_ids.join(", ");
-            let bid_label = NSTextField::labelWithString(&NSString::from_str("App Bundle IDs (comma-separated):"), mtm);
+            let bid_label = NSTextField::labelWithString(
+                &NSString::from_str("App Bundle IDs (comma-separated):"),
+                mtm,
+            );
             stack.addArrangedSubview(&bid_label);
             let bid_field = NSTextField::new(mtm);
             bid_field.setStringValue(&NSString::from_str(&bundle_ids_str));
             bid_field.setPlaceholderString(Some(&NSString::from_str("e.g. com.example.app")));
-            let wc = bid_field.widthAnchor().constraintGreaterThanOrEqualToConstant(400.0);
+            let wc = bid_field
+                .widthAnchor()
+                .constraintGreaterThanOrEqualToConstant(400.0);
             wc.setActive(true);
             stack.addArrangedSubview(&bid_field);
         }
@@ -249,38 +257,121 @@ impl SettingsWindow {
         let p = s.active();
         // -- Cursor Control --
         add_header(&stack, "Cursor Control", mtm);
-        let (t, ts) = add_slider(&stack, "Left Stick Speed", settings, "cursorSpeed", p.cursor_speed, 100.0, 5000.0, "int", mtm);
-        retained.push(t); sliders.push(ts);
-        let (t, ts) = add_slider(&stack, "D-pad Speed", settings, "dpadSpeed", p.dpad_speed, 10.0, 500.0, "int", mtm);
-        retained.push(t); sliders.push(ts);
-        let (t, ts) = add_slider(&stack, "Deadzone", settings, "deadzone", p.deadzone as f64, 0.0, 0.5, "f2", mtm);
-        retained.push(t); sliders.push(ts);
+        let (t, ts) = add_slider(
+            &stack,
+            "Left Stick Speed",
+            settings,
+            "cursorSpeed",
+            p.cursor_speed,
+            100.0,
+            5000.0,
+            "int",
+            mtm,
+        );
+        retained.push(t);
+        sliders.push(ts);
+        let (t, ts) = add_slider(
+            &stack,
+            "D-pad Speed",
+            settings,
+            "dpadSpeed",
+            p.dpad_speed,
+            10.0,
+            500.0,
+            "int",
+            mtm,
+        );
+        retained.push(t);
+        sliders.push(ts);
+        let (t, ts) = add_slider(
+            &stack,
+            "Deadzone",
+            settings,
+            "deadzone",
+            p.deadzone as f64,
+            0.0,
+            0.5,
+            "f2",
+            mtm,
+        );
+        retained.push(t);
+        sliders.push(ts);
 
         // -- Scrolling --
         add_spacer(&stack, 8.0);
         add_header(&stack, "Scrolling", mtm);
-        let (t, ts) = add_slider(&stack, "Scroll Speed", settings, "scrollSpeed", p.scroll_speed, 1.0, 30.0, "int", mtm);
-        retained.push(t); sliders.push(ts);
-        let (t, tt) = add_toggle(&stack, "Natural Scrolling", settings, "naturalScroll", p.natural_scroll, mtm);
-        retained.push(t); toggles.push(tt);
+        let (t, ts) = add_slider(
+            &stack,
+            "Scroll Speed",
+            settings,
+            "scrollSpeed",
+            p.scroll_speed,
+            1.0,
+            30.0,
+            "int",
+            mtm,
+        );
+        retained.push(t);
+        sliders.push(ts);
+        let (t, tt) = add_toggle(
+            &stack,
+            "Natural Scrolling",
+            settings,
+            "naturalScroll",
+            p.natural_scroll,
+            mtm,
+        );
+        retained.push(t);
+        toggles.push(tt);
 
         // -- Button Mapping --
         add_spacer(&stack, 8.0);
         add_header(&stack, "Button Mapping", mtm);
         for &input_id in InputId::ALL {
-            let current_id = p.button_map.get(&input_id).map(|a| a.to_id()).unwrap_or_else(|| "none".to_string());
+            let current_id = p
+                .button_map
+                .get(&input_id)
+                .map(|a| a.to_id())
+                .unwrap_or_else(|| "none".to_string());
             let current = current_id.as_str();
-            let (t, tm) = add_mapping(&stack, input_id.display_name(), settings, input_id, current, mtm);
-            retained.push(t); mappings.push(tm);
+            let (t, tm) = add_mapping(
+                &stack,
+                input_id.display_name(),
+                settings,
+                input_id,
+                current,
+                mtm,
+            );
+            retained.push(t);
+            mappings.push(tm);
         }
 
         // -- Advanced --
         add_spacer(&stack, 8.0);
         add_header(&stack, "Advanced", mtm);
-        let (t, ts) = add_slider(&stack, "Poll Rate", settings, "pollHz", p.poll_hz, 30.0, 240.0, "hz", mtm);
-        retained.push(t); sliders.push(ts);
-        let (t, tt) = add_toggle(&stack, "Debug Logging", settings, "debugLogging", s.debug, mtm);
-        retained.push(t); toggles.push(tt);
+        let (t, ts) = add_slider(
+            &stack,
+            "Poll Rate",
+            settings,
+            "pollHz",
+            p.poll_hz,
+            30.0,
+            240.0,
+            "hz",
+            mtm,
+        );
+        retained.push(t);
+        sliders.push(ts);
+        let (t, tt) = add_toggle(
+            &stack,
+            "Debug Logging",
+            settings,
+            "debugLogging",
+            s.debug,
+            mtm,
+        );
+        retained.push(t);
+        toggles.push(tt);
 
         // -- Reset button --
         add_spacer(&stack, 12.0);
@@ -314,7 +405,8 @@ impl SettingsWindow {
                     _ => 0.0,
                 };
                 ts.slider.setDoubleValue(value);
-                ts.label.setStringValue(&NSString::from_str(&format_value(value, ts.format)));
+                ts.label
+                    .setStringValue(&NSString::from_str(&format_value(value, ts.format)));
             }
             for tt in &toggles {
                 let on = match tt.field {
@@ -325,9 +417,14 @@ impl SettingsWindow {
                 tt.switch.setState(if on { 1 } else { 0 });
             }
             for tm in &mappings {
-                let action_id = p.button_map.get(&tm.input_id).map(|a| a.to_id()).unwrap_or_else(|| "none".to_string());
+                let action_id = p
+                    .button_map
+                    .get(&tm.input_id)
+                    .map(|a| a.to_id())
+                    .unwrap_or_else(|| "none".to_string());
                 let action = action_id.as_str();
-                let idx = ALL_ACTIONS.iter()
+                let idx = ALL_ACTIONS
+                    .iter()
                     .position(|(id, _)| *id == action)
                     .unwrap_or(0);
                 tm.popup.selectItemAtIndex(idx as isize);
@@ -346,7 +443,11 @@ impl SettingsWindow {
         let frame = NSRect::new(NSPoint::new(0.0, 0.0), NSSize::new(480.0, 520.0));
         let window = unsafe {
             NSWindow::initWithContentRect_styleMask_backing_defer(
-                mtm.alloc(), frame, style, NSBackingStoreType::Buffered, false,
+                mtm.alloc(),
+                frame,
+                style,
+                NSBackingStoreType::Buffered,
+                false,
             )
         };
         window.setTitle(&NSString::from_str("joyride Settings"));
@@ -360,11 +461,17 @@ impl SettingsWindow {
 
         if let Some(content_view) = window.contentView() {
             stack.setTranslatesAutoresizingMaskIntoConstraints(false);
-            let lc = stack.leadingAnchor().constraintEqualToAnchor(&content_view.leadingAnchor());
+            let lc = stack
+                .leadingAnchor()
+                .constraintEqualToAnchor(&content_view.leadingAnchor());
             lc.setActive(true);
-            let tc = stack.trailingAnchor().constraintEqualToAnchor(&content_view.trailingAnchor());
+            let tc = stack
+                .trailingAnchor()
+                .constraintEqualToAnchor(&content_view.trailingAnchor());
             tc.setActive(true);
-            let top = stack.topAnchor().constraintEqualToAnchor(&content_view.topAnchor());
+            let top = stack
+                .topAnchor()
+                .constraintEqualToAnchor(&content_view.topAnchor());
             top.setActive(true);
 
             window.setInitialFirstResponder(Some(&content_view));
@@ -405,27 +512,44 @@ fn add_spacer(stack: &NSStackView, height: f64) {
 
 #[allow(clippy::too_many_arguments)]
 fn add_slider(
-    stack: &NSStackView, title: &str, settings: &Rc<RefCell<Settings>>,
-    field: &'static str, value: f64, min: f64, max: f64, format: &'static str,
+    stack: &NSStackView,
+    title: &str,
+    settings: &Rc<RefCell<Settings>>,
+    field: &'static str,
+    value: f64,
+    min: f64,
+    max: f64,
+    format: &'static str,
     mtm: MainThreadMarker,
 ) -> (Retained<NSObject>, TrackedSlider) {
     let value_label =
         NSTextField::labelWithString(&NSString::from_str(&format_value(value, format)), mtm);
     value_label.setSelectable(false);
-    value_label.setFont(Some(&NSFont::monospacedDigitSystemFontOfSize_weight(12.0, 0.0)));
-    let vc = value_label.widthAnchor().constraintEqualToConstant(VALUE_WIDTH);
+    value_label.setFont(Some(&NSFont::monospacedDigitSystemFontOfSize_weight(
+        12.0, 0.0,
+    )));
+    let vc = value_label
+        .widthAnchor()
+        .constraintEqualToConstant(VALUE_WIDTH);
     vc.setActive(true);
     value_label.setAlignment(NSTextAlignment::Right);
 
     let target = mtm.alloc::<SliderTarget>().set_ivars(SliderIvars {
-        settings: Rc::clone(settings), field,
-        label: RefCell::new(Some(value_label.clone())), format,
+        settings: Rc::clone(settings),
+        field,
+        label: RefCell::new(Some(value_label.clone())),
+        format,
     });
     let target: Retained<SliderTarget> = unsafe { msg_send![super(target), init] };
 
     let slider = unsafe {
         NSSlider::sliderWithValue_minValue_maxValue_target_action(
-            value, min, max, Some(&target), Some(sel!(sliderChanged:)), mtm,
+            value,
+            min,
+            max,
+            Some(&target),
+            Some(sel!(sliderChanged:)),
+            mtm,
         )
     };
     slider.setContentHuggingPriority_forOrientation(1.0, NSLayoutConstraintOrientation::Horizontal);
@@ -446,20 +570,32 @@ fn add_slider(
     row.setSpacing(8.0);
     row.setDistribution(NSStackViewDistribution::Fill);
     let wc: &NSView = &row;
-    let wc = wc.widthAnchor().constraintGreaterThanOrEqualToConstant(400.0);
+    let wc = wc
+        .widthAnchor()
+        .constraintGreaterThanOrEqualToConstant(400.0);
     wc.setActive(true);
     stack.addArrangedSubview(&row);
 
-    let tracked = TrackedSlider { slider, label: value_label, field, format };
+    let tracked = TrackedSlider {
+        slider,
+        label: value_label,
+        field,
+        format,
+    };
     (Retained::into_super(target), tracked)
 }
 
 fn add_toggle(
-    stack: &NSStackView, title: &str, settings: &Rc<RefCell<Settings>>,
-    field: &'static str, value: bool, mtm: MainThreadMarker,
+    stack: &NSStackView,
+    title: &str,
+    settings: &Rc<RefCell<Settings>>,
+    field: &'static str,
+    value: bool,
+    mtm: MainThreadMarker,
 ) -> (Retained<NSObject>, TrackedToggle) {
     let target = mtm.alloc::<ToggleTarget>().set_ivars(ToggleIvars {
-        settings: Rc::clone(settings), field,
+        settings: Rc::clone(settings),
+        field,
     });
     let target: Retained<ToggleTarget> = unsafe { msg_send![super(target), init] };
 
@@ -490,8 +626,12 @@ fn add_toggle(
 }
 
 fn add_mapping(
-    stack: &NSStackView, button_display: &str, settings: &Rc<RefCell<Settings>>,
-    input_id: InputId, current_action: &str, mtm: MainThreadMarker,
+    stack: &NSStackView,
+    button_display: &str,
+    settings: &Rc<RefCell<Settings>>,
+    input_id: InputId,
+    current_action: &str,
+    mtm: MainThreadMarker,
 ) -> (Retained<NSObject>, TrackedMapping) {
     let target = mtm.alloc::<MappingTarget>().set_ivars(MappingIvars {
         settings: Rc::clone(settings),

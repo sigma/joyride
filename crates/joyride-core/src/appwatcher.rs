@@ -48,12 +48,7 @@ impl AppWatcher {
         let center = workspace.notificationCenter();
         let name = NSString::from_str("NSWorkspaceDidActivateApplicationNotification");
         let observer = unsafe {
-            center.addObserverForName_object_queue_usingBlock(
-                Some(&name),
-                None,
-                None,
-                &block,
-            )
+            center.addObserverForName_object_queue_usingBlock(Some(&name), None, None, &block)
         };
         *self._observer.borrow_mut() = Some(observer);
     }

@@ -69,13 +69,27 @@ impl Settings {
         &mut self.profiles[self.active_profile]
     }
 
-    pub fn cursor_speed(&self) -> f64 { self.active().cursor_speed }
-    pub fn dpad_speed(&self) -> f64 { self.active().dpad_speed }
-    pub fn scroll_speed(&self) -> f64 { self.active().scroll_speed }
-    pub fn deadzone(&self) -> f32 { self.active().deadzone }
-    pub fn poll_hz(&self) -> f64 { self.active().poll_hz }
-    pub fn natural_scroll(&self) -> bool { self.active().natural_scroll }
-    pub fn button_map(&self) -> &HashMap<InputId, Action> { &self.active().button_map }
+    pub fn cursor_speed(&self) -> f64 {
+        self.active().cursor_speed
+    }
+    pub fn dpad_speed(&self) -> f64 {
+        self.active().dpad_speed
+    }
+    pub fn scroll_speed(&self) -> f64 {
+        self.active().scroll_speed
+    }
+    pub fn deadzone(&self) -> f32 {
+        self.active().deadzone
+    }
+    pub fn poll_hz(&self) -> f64 {
+        self.active().poll_hz
+    }
+    pub fn natural_scroll(&self) -> bool {
+        self.active().natural_scroll
+    }
+    pub fn button_map(&self) -> &HashMap<InputId, Action> {
+        &self.active().button_map
+    }
 
     pub fn poll_interval(&self) -> f64 {
         1.0 / self.poll_hz()
@@ -103,8 +117,15 @@ impl Settings {
         let ud = NSUserDefaults::standardUserDefaults();
 
         // Remove legacy keys
-        for key in &["cursorSpeed", "dpadSpeed", "scrollSpeed", "deadzone",
-                     "pollHz", "naturalScroll", "debugLogging"] {
+        for key in &[
+            "cursorSpeed",
+            "dpadSpeed",
+            "scrollSpeed",
+            "deadzone",
+            "pollHz",
+            "naturalScroll",
+            "debugLogging",
+        ] {
             ud.removeObjectForKey(&NSString::from_str(key));
         }
         for &input in InputId::ALL {
@@ -154,12 +175,27 @@ fn save_profiles(ud: &NSUserDefaults, profiles: &[Profile]) {
 
     for p in profiles {
         let n = &p.name;
-        ud.setDouble_forKey(p.cursor_speed, &NSString::from_str(&profile_key(n, "cursorSpeed")));
-        ud.setDouble_forKey(p.dpad_speed, &NSString::from_str(&profile_key(n, "dpadSpeed")));
-        ud.setDouble_forKey(p.scroll_speed, &NSString::from_str(&profile_key(n, "scrollSpeed")));
-        ud.setDouble_forKey(p.deadzone as f64, &NSString::from_str(&profile_key(n, "deadzone")));
+        ud.setDouble_forKey(
+            p.cursor_speed,
+            &NSString::from_str(&profile_key(n, "cursorSpeed")),
+        );
+        ud.setDouble_forKey(
+            p.dpad_speed,
+            &NSString::from_str(&profile_key(n, "dpadSpeed")),
+        );
+        ud.setDouble_forKey(
+            p.scroll_speed,
+            &NSString::from_str(&profile_key(n, "scrollSpeed")),
+        );
+        ud.setDouble_forKey(
+            p.deadzone as f64,
+            &NSString::from_str(&profile_key(n, "deadzone")),
+        );
         ud.setDouble_forKey(p.poll_hz, &NSString::from_str(&profile_key(n, "pollHz")));
-        ud.setBool_forKey(p.natural_scroll, &NSString::from_str(&profile_key(n, "naturalScroll")));
+        ud.setBool_forKey(
+            p.natural_scroll,
+            &NSString::from_str(&profile_key(n, "naturalScroll")),
+        );
 
         // Bundle IDs
         let bids = p.bundle_ids.join(",");
@@ -189,22 +225,33 @@ fn load_profiles(ud: &NSUserDefaults, cli: &Config) -> Vec<Profile> {
         _ => return Vec::new(),
     };
 
-    names_str.split(',')
+    names_str
+        .split(',')
         .map(|name| load_profile(ud, name.trim(), cli))
         .collect()
 }
 
 fn load_profile(ud: &NSUserDefaults, name: &str, cli: &Config) -> Profile {
     let base = Profile::from_config(cli);
-    let cursor_speed = ud_double(ud, &profile_key(name, "cursorSpeed")).unwrap_or(base.cursor_speed);
+    let cursor_speed =
+        ud_double(ud, &profile_key(name, "cursorSpeed")).unwrap_or(base.cursor_speed);
     let dpad_speed = ud_double(ud, &profile_key(name, "dpadSpeed")).unwrap_or(base.dpad_speed);
-    let scroll_speed = ud_double(ud, &profile_key(name, "scrollSpeed")).unwrap_or(base.scroll_speed);
-    let deadzone = ud_double(ud, &profile_key(name, "deadzone")).map(|v| v as f32).unwrap_or(base.deadzone);
+    let scroll_speed =
+        ud_double(ud, &profile_key(name, "scrollSpeed")).unwrap_or(base.scroll_speed);
+    let deadzone = ud_double(ud, &profile_key(name, "deadzone"))
+        .map(|v| v as f32)
+        .unwrap_or(base.deadzone);
     let poll_hz = ud_double(ud, &profile_key(name, "pollHz")).unwrap_or(base.poll_hz);
-    let natural_scroll = ud_bool(ud, &profile_key(name, "naturalScroll")).unwrap_or(base.natural_scroll);
+    let natural_scroll =
+        ud_bool(ud, &profile_key(name, "naturalScroll")).unwrap_or(base.natural_scroll);
 
     let bundle_ids = ud_string(ud, &profile_key(name, "bundleIds"))
-        .map(|s| s.split(',').filter(|b| !b.is_empty()).map(|b| b.to_string()).collect())
+        .map(|s| {
+            s.split(',')
+                .filter(|b| !b.is_empty())
+                .map(|b| b.to_string())
+                .collect()
+        })
         .unwrap_or_default();
 
     let mut button_map = base.button_map;
@@ -234,7 +281,9 @@ fn load_legacy_profile(ud: &NSUserDefaults, cli: &Config) -> Profile {
     p.cursor_speed = ud_double(ud, "cursorSpeed").unwrap_or(p.cursor_speed);
     p.dpad_speed = ud_double(ud, "dpadSpeed").unwrap_or(p.dpad_speed);
     p.scroll_speed = ud_double(ud, "scrollSpeed").unwrap_or(p.scroll_speed);
-    p.deadzone = ud_double(ud, "deadzone").map(|v| v as f32).unwrap_or(p.deadzone);
+    p.deadzone = ud_double(ud, "deadzone")
+        .map(|v| v as f32)
+        .unwrap_or(p.deadzone);
     p.poll_hz = ud_double(ud, "pollHz").unwrap_or(p.poll_hz);
     p.natural_scroll = ud_bool(ud, "naturalScroll").unwrap_or(p.natural_scroll);
 
@@ -251,18 +300,29 @@ fn delete_all_profiles(ud: &NSUserDefaults, profiles: &[Profile]) {
     ud.removeObjectForKey(&NSString::from_str("profileNames"));
     for p in profiles {
         let n = &p.name;
-        for field in &["cursorSpeed", "dpadSpeed", "scrollSpeed", "deadzone",
-                       "pollHz", "naturalScroll", "bundleIds"] {
+        for field in &[
+            "cursorSpeed",
+            "dpadSpeed",
+            "scrollSpeed",
+            "deadzone",
+            "pollHz",
+            "naturalScroll",
+            "bundleIds",
+        ] {
             ud.removeObjectForKey(&NSString::from_str(&profile_key(n, field)));
         }
         for &input in InputId::ALL {
-            ud.removeObjectForKey(&NSString::from_str(&profile_key(n, &format!("mapping.{}", input.as_str()))));
+            ud.removeObjectForKey(&NSString::from_str(&profile_key(
+                n,
+                &format!("mapping.{}", input.as_str()),
+            )));
         }
     }
 }
 
 fn ud_string(ud: &NSUserDefaults, key: &str) -> Option<String> {
-    ud.stringForKey(&NSString::from_str(key)).map(|s| s.to_string())
+    ud.stringForKey(&NSString::from_str(key))
+        .map(|s| s.to_string())
 }
 
 fn ud_double(ud: &NSUserDefaults, key: &str) -> Option<f64> {
@@ -321,10 +381,22 @@ mod tests {
     fn default_button_map_cli_assignments() {
         let settings = Settings::new(default_config());
         let s = settings.borrow();
-        assert_eq!(*s.button_map().get(&InputId::ButtonA).unwrap(), Action::LeftClick);
-        assert_eq!(*s.button_map().get(&InputId::ButtonB).unwrap(), Action::RightClick);
-        assert_eq!(*s.button_map().get(&InputId::ButtonX).unwrap(), Action::MiddleClick);
-        assert_eq!(*s.button_map().get(&InputId::ButtonY).unwrap(), Action::None);
+        assert_eq!(
+            *s.button_map().get(&InputId::ButtonA).unwrap(),
+            Action::LeftClick
+        );
+        assert_eq!(
+            *s.button_map().get(&InputId::ButtonB).unwrap(),
+            Action::RightClick
+        );
+        assert_eq!(
+            *s.button_map().get(&InputId::ButtonX).unwrap(),
+            Action::MiddleClick
+        );
+        assert_eq!(
+            *s.button_map().get(&InputId::ButtonY).unwrap(),
+            Action::None
+        );
     }
 
     #[test]
@@ -334,13 +406,18 @@ mod tests {
             let mut s = settings.borrow_mut();
             s.active_mut().cursor_speed = 9999.0;
             s.active_mut().natural_scroll = true;
-            s.active_mut().button_map.insert(InputId::ButtonA, Action::None);
+            s.active_mut()
+                .button_map
+                .insert(InputId::ButtonA, Action::None);
             s.reset_to_defaults();
         }
         let s = settings.borrow();
         assert_eq!(s.cursor_speed(), 1500.0);
         assert!(!s.natural_scroll());
-        assert_eq!(*s.button_map().get(&InputId::ButtonA).unwrap(), Action::LeftClick);
+        assert_eq!(
+            *s.button_map().get(&InputId::ButtonA).unwrap(),
+            Action::LeftClick
+        );
     }
 
     #[test]
@@ -364,7 +441,10 @@ mod tests {
         assert_eq!(profile.name, "Default");
         assert_eq!(profile.cursor_speed, 1500.0);
         assert!(profile.bundle_ids.is_empty());
-        assert_eq!(*profile.button_map.get(&InputId::ButtonA).unwrap(), Action::LeftClick);
+        assert_eq!(
+            *profile.button_map.get(&InputId::ButtonA).unwrap(),
+            Action::LeftClick
+        );
     }
 
     #[test]

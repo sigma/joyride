@@ -55,19 +55,30 @@ impl OutputEvent {
 /// Fully decomposed output event primitives.
 #[derive(Debug, Clone, PartialEq)]
 pub enum OutputEventKind {
-    MoveCursor { dx: f64, dy: f64 },
-    Scroll { dx: f64, dy: f64 },
+    MoveCursor {
+        dx: f64,
+        dy: f64,
+    },
+    Scroll {
+        dx: f64,
+        dy: f64,
+    },
     MouseDown(MouseButtonKind),
     MouseUp(MouseButtonKind),
-    KeyDown { keycode: u16, modifiers: Vec<Modifier> },
-    KeyUp { keycode: u16, modifiers: Vec<Modifier> },
+    KeyDown {
+        keycode: u16,
+        modifiers: Vec<Modifier>,
+    },
+    KeyUp {
+        keycode: u16,
+        modifiers: Vec<Modifier>,
+    },
 }
 
 /// Consumes a batch of output events and posts them to the OS.
 pub trait EventEmitter {
     fn emit(&mut self, events: &[OutputEvent]);
 }
-
 
 /// A gamepad input source that can be mapped to an action.
 /// Using an enum instead of strings ensures typos are caught at compile time.
@@ -92,11 +103,20 @@ pub enum InputId {
 impl InputId {
     /// All input IDs in canonical order.
     pub const ALL: &[InputId] = &[
-        InputId::ButtonA, InputId::ButtonB, InputId::ButtonX, InputId::ButtonY,
-        InputId::LeftShoulder, InputId::RightShoulder,
-        InputId::LeftTrigger, InputId::RightTrigger,
-        InputId::ButtonMenu, InputId::ButtonOptions,
-        InputId::DpadUp, InputId::DpadDown, InputId::DpadLeft, InputId::DpadRight,
+        InputId::ButtonA,
+        InputId::ButtonB,
+        InputId::ButtonX,
+        InputId::ButtonY,
+        InputId::LeftShoulder,
+        InputId::RightShoulder,
+        InputId::LeftTrigger,
+        InputId::RightTrigger,
+        InputId::ButtonMenu,
+        InputId::ButtonOptions,
+        InputId::DpadUp,
+        InputId::DpadDown,
+        InputId::DpadLeft,
+        InputId::DpadRight,
     ];
 
     /// Serialization string (used in persistence and settings keys).
@@ -238,7 +258,11 @@ pub struct KeyCombo {
 impl KeyCombo {
     /// Serialize to a compact string like "cmd+shift+0x00" or "ctrl+0x7C"
     pub fn to_id(&self) -> String {
-        let mut parts: Vec<String> = self.modifiers.iter().map(|m| m.to_id().to_string()).collect();
+        let mut parts: Vec<String> = self
+            .modifiers
+            .iter()
+            .map(|m| m.to_id().to_string())
+            .collect();
         parts.push(format!("0x{:02X}", self.keycode));
         parts.join("+")
     }
@@ -260,7 +284,11 @@ impl KeyCombo {
         }
         let keycode = keycode?;
         let key_name = keycode_name(keycode).to_string();
-        Some(KeyCombo { modifiers, keycode, key_name })
+        Some(KeyCombo {
+            modifiers,
+            keycode,
+            key_name,
+        })
     }
 
     pub fn display(&self) -> String {
@@ -272,19 +300,53 @@ impl KeyCombo {
 /// Human-readable names for common macOS virtual keycodes.
 pub fn keycode_name(keycode: u16) -> &'static str {
     match keycode {
-        0x00 => "A", 0x01 => "S", 0x02 => "D", 0x03 => "F",
-        0x04 => "H", 0x05 => "G", 0x06 => "Z", 0x07 => "X",
-        0x08 => "C", 0x09 => "V", 0x0B => "B", 0x0C => "Q",
-        0x0D => "W", 0x0E => "E", 0x0F => "R", 0x10 => "Y",
-        0x11 => "T", 0x12 => "1", 0x13 => "2", 0x14 => "3",
-        0x15 => "4", 0x16 => "6", 0x17 => "5", 0x1D => "0",
-        0x1E => "9", 0x1F => "7", 0x20 => "8",
-        0x24 => "Return", 0x30 => "Tab", 0x31 => "Space",
-        0x33 => "Delete", 0x35 => "Escape",
-        0x7B => "←", 0x7C => "→", 0x7D => "↓", 0x7E => "↑",
-        0x60 => "F5", 0x61 => "F6", 0x62 => "F7", 0x63 => "F3",
-        0x64 => "F8", 0x65 => "F9", 0x67 => "F11", 0x6F => "F12",
-        0x76 => "F4", 0x78 => "F2", 0x7A => "F1",
+        0x00 => "A",
+        0x01 => "S",
+        0x02 => "D",
+        0x03 => "F",
+        0x04 => "H",
+        0x05 => "G",
+        0x06 => "Z",
+        0x07 => "X",
+        0x08 => "C",
+        0x09 => "V",
+        0x0B => "B",
+        0x0C => "Q",
+        0x0D => "W",
+        0x0E => "E",
+        0x0F => "R",
+        0x10 => "Y",
+        0x11 => "T",
+        0x12 => "1",
+        0x13 => "2",
+        0x14 => "3",
+        0x15 => "4",
+        0x16 => "6",
+        0x17 => "5",
+        0x1D => "0",
+        0x1E => "9",
+        0x1F => "7",
+        0x20 => "8",
+        0x24 => "Return",
+        0x30 => "Tab",
+        0x31 => "Space",
+        0x33 => "Delete",
+        0x35 => "Escape",
+        0x7B => "←",
+        0x7C => "→",
+        0x7D => "↓",
+        0x7E => "↑",
+        0x60 => "F5",
+        0x61 => "F6",
+        0x62 => "F7",
+        0x63 => "F3",
+        0x64 => "F8",
+        0x65 => "F9",
+        0x67 => "F11",
+        0x6F => "F12",
+        0x76 => "F4",
+        0x78 => "F2",
+        0x7A => "F1",
         _ => "?",
     }
 }
@@ -316,8 +378,16 @@ impl Action {
             ("middleClick", "Middle Click", Action::MiddleClick),
             ("backClick", "Back", Action::BackClick),
             ("forwardClick", "Forward", Action::ForwardClick),
-            ("doubleLeftClick", "Double Left Click", Action::DoubleLeftClick),
-            ("doubleRightClick", "Double Right Click", Action::DoubleRightClick),
+            (
+                "doubleLeftClick",
+                "Double Left Click",
+                Action::DoubleLeftClick,
+            ),
+            (
+                "doubleRightClick",
+                "Double Right Click",
+                Action::DoubleRightClick,
+            ),
         ]
     }
 
@@ -442,10 +512,8 @@ impl Config {
                 "--exclude" => {
                     i += 1;
                     if i < args.len() {
-                        config.excluded_bundle_ids = args[i]
-                            .split(',')
-                            .map(|s| s.to_string())
-                            .collect();
+                        config.excluded_bundle_ids =
+                            args[i].split(',').map(|s| s.to_string()).collect();
                     }
                 }
                 "--cursor-speed" => {
@@ -615,7 +683,11 @@ impl Profile {
             deadzone: self.deadzone,
             poll_hz: self.poll_hz,
             natural_scroll: self.natural_scroll,
-            button_map: self.button_map.iter().map(|(k, v)| (k.as_str().to_string(), v.to_id())).collect(),
+            button_map: self
+                .button_map
+                .iter()
+                .map(|(k, v)| (k.as_str().to_string(), v.to_id()))
+                .collect(),
         }
     }
 
@@ -630,7 +702,9 @@ impl Profile {
             deadzone: data.deadzone,
             poll_hz: data.poll_hz,
             natural_scroll: data.natural_scroll,
-            button_map: data.button_map.iter()
+            button_map: data
+                .button_map
+                .iter()
                 .filter_map(|(k, v)| InputId::parse(k).map(|id| (id, Action::from_id(v))))
                 .collect(),
         }
@@ -756,10 +830,14 @@ mod tests {
     #[test]
     fn button_assignment_flags() {
         let config = Config::parse(&args(&[
-            "--left-click", "buttonY",
-            "--right-click", "leftShoulder",
-            "--middle-click", "rightShoulder",
-        ])).unwrap();
+            "--left-click",
+            "buttonY",
+            "--right-click",
+            "leftShoulder",
+            "--middle-click",
+            "rightShoulder",
+        ]))
+        .unwrap();
         assert_eq!(config.left_click, "buttonY");
         assert_eq!(config.right_click, "leftShoulder");
         assert_eq!(config.middle_click, "rightShoulder");
@@ -793,10 +871,13 @@ mod tests {
     #[test]
     fn multiple_flags_combined() {
         let config = Config::parse(&args(&[
-            "--cursor-speed", "3000",
-            "--poll-hz", "60",
+            "--cursor-speed",
+            "3000",
+            "--poll-hz",
+            "60",
             "--debug",
-        ])).unwrap();
+        ]))
+        .unwrap();
         assert_eq!(config.cursor_speed, 3000.0);
         assert_eq!(config.poll_hz, 60.0);
         assert!(config.debug);
@@ -919,7 +1000,10 @@ mod tests {
 
         // Drop to 0.45 (below activate but above deactivate) — should stay active
         apply_dpad_hysteresis(0.45, 0.0, &mut active, &mut pressed);
-        assert!(pressed.contains(&InputId::DpadRight), "should not deactivate in dead band");
+        assert!(
+            pressed.contains(&InputId::DpadRight),
+            "should not deactivate in dead band"
+        );
 
         // Oscillate back to 0.55 — still active, no flicker
         apply_dpad_hysteresis(0.55, 0.0, &mut active, &mut pressed);
@@ -947,7 +1031,10 @@ mod tests {
 
         // Not active initially
         apply_dpad_hysteresis(0.55, 0.0, &mut active, &mut pressed);
-        assert!(!pressed.contains(&InputId::DpadRight), "0.55 < activate threshold");
+        assert!(
+            !pressed.contains(&InputId::DpadRight),
+            "0.55 < activate threshold"
+        );
 
         // Cross activate
         apply_dpad_hysteresis(0.65, 0.0, &mut active, &mut pressed);
@@ -1034,7 +1121,10 @@ mod tests {
         assert_eq!(imported.len(), 1);
         assert_eq!(imported[0].name, profile.name);
         assert_eq!(imported[0].cursor_speed, profile.cursor_speed);
-        assert_eq!(imported[0].button_map.get(&InputId::ButtonA), profile.button_map.get(&InputId::ButtonA));
+        assert_eq!(
+            imported[0].button_map.get(&InputId::ButtonA),
+            profile.button_map.get(&InputId::ButtonA)
+        );
     }
 
     #[test]
@@ -1054,7 +1144,9 @@ mod tests {
             keycode: 0x00,
             key_name: "A".to_string(),
         };
-        profile.button_map.insert(InputId::ButtonY, Action::KeyPress(combo.clone()));
+        profile
+            .button_map
+            .insert(InputId::ButtonY, Action::KeyPress(combo.clone()));
         let json = export_profiles_json(&[profile]).unwrap();
         let imported = import_profiles_json(&json).unwrap();
         assert_eq!(

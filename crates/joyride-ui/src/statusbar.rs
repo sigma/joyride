@@ -9,9 +9,9 @@ use objc2_foundation::{MainThreadMarker, NSString};
 
 use log::info;
 
+use crate::settings_window::SettingsWindow;
 use joyride_core::gamepad::GamepadManager;
 use joyride_core::settings::Settings;
-use crate::settings_window::SettingsWindow;
 
 struct MenuTargetIvars {
     enabled: Rc<Cell<bool>>,
