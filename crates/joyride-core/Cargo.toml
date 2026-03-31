@@ -31,3 +31,4 @@ objc2-app-kit = { workspace = true, features = [
 core-graphics.workspace = true
 core-foundation.workspace = true
 block2.workspace = true
+log.workspace = true

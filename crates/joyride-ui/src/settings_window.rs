@@ -148,7 +148,7 @@ define_class!(
             if let Some(refresh) = self.ivars().refresh.borrow().as_ref() {
                 refresh();
             }
-            eprintln!("joyride: settings reset to defaults");
+            log::info!("settings reset to defaults");
         }
     }
 );

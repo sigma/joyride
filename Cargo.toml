@@ -18,3 +18,5 @@ core-graphics = { version = "0.25", features = ["highsierra"] }
 core-foundation = "0.10"
 accessibility-sys = "0.2"
 block2 = "0.6"
+log = "0.4"
+env_logger = "0.11"

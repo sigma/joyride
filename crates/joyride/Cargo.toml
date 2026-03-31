@@ -17,3 +17,5 @@ objc2-foundation = { workspace = true, features = [
 ] }
 core-foundation.workspace = true
 accessibility-sys.workspace = true
+log.workspace = true
+env_logger.workspace = true

@@ -7,6 +7,8 @@ use core_foundation::base::TCFType;
 use objc2_app_kit::{NSApplication, NSApplicationActivationPolicy};
 use objc2_foundation::MainThreadMarker;
 
+use log::{info, warn};
+
 use joyride_config::{Config, EventEmitter};
 use joyride_core::appwatcher::AppWatcher;
 use joyride_core::gamepad::GamepadManager;
@@ -58,6 +60,13 @@ fn main() {
     let mtm = MainThreadMarker::new().expect("must run on main thread");
 
     let config = Config::from_args();
+
+    // Init logger: --debug → Debug level, otherwise Info
+    let level = if config.debug { "debug" } else { "info" };
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or(level))
+        .format_timestamp_millis()
+        .init();
+
     let settings = Settings::new(config);
 
     let app = NSApplication::sharedApplication(mtm);
@@ -150,9 +159,9 @@ extern "C" fn poll_callback(ctx_ptr: *mut c_void) {
             settings.profile_locked = !settings.profile_locked;
             if settings.profile_locked {
                 settings.active_profile = 0;
-                eprintln!("joyride: profile locked to Default");
+                info!("profile locked to Default");
             } else {
-                eprintln!("joyride: profile auto-switching re-enabled");
+                info!("profile auto-switching re-enabled");
             }
         }
         *was_held = combo_held;
@@ -170,7 +179,7 @@ extern "C" fn poll_callback(ctx_ptr: *mut c_void) {
             let target = settings.profile_for_bundle_id(&bundle_id).unwrap_or(0);
             if settings.active_profile != target {
                 let name = settings.profiles[target].name.clone();
-                eprintln!("joyride: switched to profile '{name}'");
+                info!("switched to profile '{name}'");
                 settings.active_profile = target;
             }
         }
@@ -233,7 +242,7 @@ fn check_accessibility() {
     if trusted {
         return;
     }
-    eprintln!("joyride: Accessibility permission not granted — requesting once");
+    warn!("Accessibility permission not granted — requesting once");
     let key = core_foundation::string::CFString::new("AXTrustedCheckOptionPrompt");
     let value = core_foundation::boolean::CFBoolean::true_value();
     let opts = core_foundation::dictionary::CFDictionary::from_CFType_pairs(&[(
@@ -247,8 +256,8 @@ fn check_accessibility() {
     }
     std::thread::sleep(std::time::Duration::from_secs(1));
     if unsafe { accessibility_sys::AXIsProcessTrusted() } {
-        eprintln!("joyride: Accessibility permission granted");
+        info!("Accessibility permission granted");
     } else {
-        eprintln!("joyride: Accessibility permission still pending — cursor control will not work until granted");
+        warn!("Accessibility permission still pending — cursor control will not work until granted");
     }
 }

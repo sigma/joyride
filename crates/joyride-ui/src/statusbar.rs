@@ -7,6 +7,8 @@ use objc2::{define_class, msg_send, sel, DeclaredClass};
 use objc2_app_kit::*;
 use objc2_foundation::{MainThreadMarker, NSString};
 
+use log::info;
+
 use joyride_core::gamepad::GamepadManager;
 use joyride_core::settings::Settings;
 use crate::settings_window::SettingsWindow;
@@ -46,7 +48,7 @@ define_class!(
                     button.setImage(Some(&image));
                 }
             }
-            eprintln!("joyride: {}", if now { "enabled" } else { "disabled" });
+            info!("{}", if now { "enabled" } else { "disabled" });
         }
 
         #[unsafe(method(openSettings:))]

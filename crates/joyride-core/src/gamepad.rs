@@ -3,6 +3,8 @@ use std::ffi::c_float;
 use std::ptr::NonNull;
 use std::rc::Rc;
 
+use log::{debug, info, warn};
+
 use block2::RcBlock;
 use objc2::rc::Retained;
 use objc2::runtime::Bool;
@@ -77,7 +79,7 @@ impl GamepadManager {
                 .unwrap_or_else(|| "unknown".to_string())
         };
         let category = unsafe { gc.productCategory().to_string() };
-        eprintln!("joyride: connected to {name} ({category})");
+        info!("connected to {name} ({category})");
 
         self.setup_handlers(gc);
     }
@@ -85,7 +87,7 @@ impl GamepadManager {
     fn setup_handlers(&self, gc: &GCController) {
         let pad = unsafe { gc.extendedGamepad() };
         let Some(pad) = pad else {
-            eprintln!("joyride: warning - no extendedGamepad profile");
+            warn!("no extendedGamepad profile");
             return;
         };
 
@@ -96,7 +98,7 @@ impl GamepadManager {
             move |_: NonNull<GCControllerDirectionPad>, x: c_float, y: c_float| {
                 state.borrow_mut().left_stick = (x, y);
                 if debug {
-                    eprintln!("joyride: L({x}, {y})");
+                    debug!("L({x}, {y})");
                 }
             },
         );
@@ -112,7 +114,7 @@ impl GamepadManager {
             move |_: NonNull<GCControllerDirectionPad>, x: c_float, y: c_float| {
                 state.borrow_mut().right_stick = (x, y);
                 if debug {
-                    eprintln!("joyride: R({x}, {y})");
+                    debug!("R({x}, {y})");
                 }
             },
         );
@@ -133,7 +135,7 @@ impl GamepadManager {
                 let mut active = dpad_active_clone.borrow_mut();
                 joyride_config::apply_dpad_hysteresis(x, y, &mut active, &mut s.pressed_buttons);
                 if debug {
-                    eprintln!("joyride: D({x}, {y})");
+                    debug!("D({x}, {y})");
                 }
             },
         );
