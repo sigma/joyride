@@ -6,14 +6,15 @@
   "blocks": [
     "jr-m17.5"
   ],
+  "closed_at": "2026-03-31T14:15:14Z",
   "created": "2026-03-31T14:09:42Z",
   "description": "Add translator to PollContext. Build TranslatorConfig from settings. Call translate() then emit().",
   "id": "jr-m17.4",
   "labels": [],
   "parent": "jr-m17",
   "priority": 2,
-  "status": "open",
+  "status": "closed",
   "title": "Rewire poll_callback",
   "type": "task",
-  "updated_at": "2026-03-31T14:09:47Z"
+  "updated_at": "2026-03-31T14:15:14Z"
 }
