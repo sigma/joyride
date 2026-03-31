@@ -2,13 +2,14 @@
   "assignee": "unknown",
   "blocked_by": [],
   "blocks": [],
+  "closed_at": "2026-03-31T16:08:51Z",
   "created": "2026-03-31T15:52:09Z",
   "description": "profile_for_bundle_id does O(n*m) linear scan per frame. Build a HashMap\u003cString, usize\u003e on profile change. Invalidate on profile add/remove/edit.",
   "id": "jr-o1c",
   "labels": [],
   "priority": 3,
-  "status": "in_progress",
+  "status": "closed",
   "title": "Build HashMap cache for profile bundle ID lookup",
   "type": "task",
-  "updated_at": "2026-03-31T16:06:38Z"
+  "updated_at": "2026-03-31T16:08:51Z"
 }
