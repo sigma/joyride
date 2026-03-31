@@ -3,7 +3,9 @@
   "blocked_by": [
     "jr-m17.3"
   ],
-  "blocks": [],
+  "blocks": [
+    "jr-m17.5"
+  ],
   "created": "2026-03-31T14:09:42Z",
   "description": "Add translator to PollContext. Build TranslatorConfig from settings. Call translate() then emit().",
   "id": "jr-m17.4",
