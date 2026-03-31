@@ -1,5 +1,5 @@
 {
-  "assignee": "",
+  "assignee": "unknown",
   "blocked_by": [
     "jr-byo.3"
   ],
@@ -12,8 +12,8 @@
   "labels": [],
   "parent": "jr-byo",
   "priority": 2,
-  "status": "open",
+  "status": "in_progress",
   "title": "Move log path from /tmp to persistent location",
   "type": "task",
-  "updated_at": "2026-03-31T15:24:54Z"
+  "updated_at": "2026-03-31T15:30:34Z"
 }
