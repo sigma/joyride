@@ -1,6 +1,8 @@
 {
   "assignee": "",
-  "blocked_by": [],
+  "blocked_by": [
+    "jr-byo.3"
+  ],
   "blocks": [],
   "created": "2026-03-31T15:24:47Z",
   "description": "darwin-module.nix uses /tmp/joyride.log which is lost on reboot. Use ~/Library/Logs/joyride.log.",
@@ -11,5 +13,5 @@
   "status": "open",
   "title": "Move log path from /tmp to persistent location",
   "type": "task",
-  "updated_at": "2026-03-31T15:24:47Z"
+  "updated_at": "2026-03-31T15:24:54Z"
 }

@@ -3,7 +3,9 @@
   "blocked_by": [
     "jr-byo.2"
   ],
-  "blocks": [],
+  "blocks": [
+    "jr-byo.4"
+  ],
   "created": "2026-03-31T15:24:47Z",
   "description": "button_map().clone() every poll tick is wasteful. Cache TranslatorConfig and only rebuild when active profile changes.",
   "id": "jr-byo.3",
