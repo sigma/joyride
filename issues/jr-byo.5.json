@@ -1,0 +1,15 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-03-31T15:24:47Z",
+  "description": "Zero /// doc comments exist. Add to InputTranslator, EventEmitter, OutputEvent, Profile, Action, Config, Settings, MouseEmitter, GamepadState.",
+  "id": "jr-byo.5",
+  "labels": [],
+  "parent": "jr-byo",
+  "priority": 2,
+  "status": "open",
+  "title": "Add doc comments to public API",
+  "type": "task",
+  "updated_at": "2026-03-31T15:24:47Z"
+}
