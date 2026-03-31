@@ -1,5 +1,5 @@
 {
-  "assignee": "",
+  "assignee": "unknown",
   "blocked_by": [
     "jr-m17.2"
   ],
@@ -12,8 +12,8 @@
   "labels": [],
   "parent": "jr-m17",
   "priority": 2,
-  "status": "open",
+  "status": "in_progress",
   "title": "Refactor MouseEmitter as EventEmitter",
   "type": "task",
-  "updated_at": "2026-03-31T14:09:47Z"
+  "updated_at": "2026-03-31T14:13:30Z"
 }
