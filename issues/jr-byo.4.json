@@ -3,7 +3,9 @@
   "blocked_by": [
     "jr-byo.3"
   ],
-  "blocks": [],
+  "blocks": [
+    "jr-byo.5"
+  ],
   "created": "2026-03-31T15:24:47Z",
   "description": "darwin-module.nix uses /tmp/joyride.log which is lost on reboot. Use ~/Library/Logs/joyride.log.",
   "id": "jr-byo.4",
