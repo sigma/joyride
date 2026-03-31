@@ -15,6 +15,9 @@ use joyride_core::settings::Settings;
 use joyride_core::translator::{InputTranslator, TranslatorConfig};
 use joyride_ui::statusbar::StatusBar;
 
+use objc2_app_kit::{NSImage};
+use objc2_foundation::NSString;
+
 // Raw libdispatch FFI for timer
 extern "C" {
     fn dispatch_source_create(
@@ -56,6 +59,14 @@ fn main() {
 
     let app = NSApplication::sharedApplication(mtm);
     app.setActivationPolicy(NSApplicationActivationPolicy::Accessory);
+
+    // Set app icon from SF Symbol so it appears in Accessibility prefs and dock
+    if let Some(icon) = NSImage::imageWithSystemSymbolName_accessibilityDescription(
+        &NSString::from_str("gamecontroller.fill"),
+        Some(&NSString::from_str("joyride")),
+    ) {
+        unsafe { app.setApplicationIconImage(Some(&icon)) };
+    }
 
     check_accessibility();
 

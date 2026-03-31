@@ -9,8 +9,10 @@ joyride-core.workspace = true
 joyride-ui.workspace = true
 objc2-app-kit = { workspace = true, features = [
     "NSApplication",
+    "NSImage",
 ] }
 objc2-foundation = { workspace = true, features = [
+    "NSString",
     "NSThread",
 ] }
 core-foundation.workspace = true
