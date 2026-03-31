@@ -213,7 +213,7 @@ extern "C" fn poll_callback(ctx_ptr: *mut c_void) {
                 cursor_speed: settings.cursor_speed(),
                 dpad_speed: settings.dpad_speed(),
                 scroll_speed: settings.scroll_speed(),
-                deadzone: settings.deadzone() as f32,
+                deadzone: settings.deadzone(),
                 natural_scroll: settings.natural_scroll(),
                 button_map: settings.button_map().clone(),
             };

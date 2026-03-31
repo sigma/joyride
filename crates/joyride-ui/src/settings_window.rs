@@ -64,7 +64,7 @@ define_class!(
                     "cursorSpeed" => p.cursor_speed = value,
                     "dpadSpeed" => p.dpad_speed = value,
                     "scrollSpeed" => p.scroll_speed = value,
-                    "deadzone" => p.deadzone = value,
+                    "deadzone" => p.deadzone = value as f32,
                     "pollHz" => p.poll_hz = value,
                     _ => {}
                 }
@@ -253,7 +253,7 @@ impl SettingsWindow {
         retained.push(t); sliders.push(ts);
         let (t, ts) = add_slider(&stack, "D-pad Speed", settings, "dpadSpeed", p.dpad_speed, 10.0, 500.0, "int", mtm);
         retained.push(t); sliders.push(ts);
-        let (t, ts) = add_slider(&stack, "Deadzone", settings, "deadzone", p.deadzone, 0.0, 0.5, "f2", mtm);
+        let (t, ts) = add_slider(&stack, "Deadzone", settings, "deadzone", p.deadzone as f64, 0.0, 0.5, "f2", mtm);
         retained.push(t); sliders.push(ts);
 
         // -- Scrolling --
@@ -309,7 +309,7 @@ impl SettingsWindow {
                     "cursorSpeed" => p.cursor_speed,
                     "dpadSpeed" => p.dpad_speed,
                     "scrollSpeed" => p.scroll_speed,
-                    "deadzone" => p.deadzone,
+                    "deadzone" => p.deadzone as f64,
                     "pollHz" => p.poll_hz,
                     _ => 0.0,
                 };

@@ -72,7 +72,7 @@ impl Settings {
     pub fn cursor_speed(&self) -> f64 { self.active().cursor_speed }
     pub fn dpad_speed(&self) -> f64 { self.active().dpad_speed }
     pub fn scroll_speed(&self) -> f64 { self.active().scroll_speed }
-    pub fn deadzone(&self) -> f64 { self.active().deadzone }
+    pub fn deadzone(&self) -> f32 { self.active().deadzone }
     pub fn poll_hz(&self) -> f64 { self.active().poll_hz }
     pub fn natural_scroll(&self) -> bool { self.active().natural_scroll }
     pub fn button_map(&self) -> &HashMap<InputId, Action> { &self.active().button_map }
@@ -157,7 +157,7 @@ fn save_profiles(ud: &NSUserDefaults, profiles: &[Profile]) {
         ud.setDouble_forKey(p.cursor_speed, &NSString::from_str(&profile_key(n, "cursorSpeed")));
         ud.setDouble_forKey(p.dpad_speed, &NSString::from_str(&profile_key(n, "dpadSpeed")));
         ud.setDouble_forKey(p.scroll_speed, &NSString::from_str(&profile_key(n, "scrollSpeed")));
-        ud.setDouble_forKey(p.deadzone, &NSString::from_str(&profile_key(n, "deadzone")));
+        ud.setDouble_forKey(p.deadzone as f64, &NSString::from_str(&profile_key(n, "deadzone")));
         ud.setDouble_forKey(p.poll_hz, &NSString::from_str(&profile_key(n, "pollHz")));
         ud.setBool_forKey(p.natural_scroll, &NSString::from_str(&profile_key(n, "naturalScroll")));
 
@@ -199,7 +199,7 @@ fn load_profile(ud: &NSUserDefaults, name: &str, cli: &Config) -> Profile {
     let cursor_speed = ud_double(ud, &profile_key(name, "cursorSpeed")).unwrap_or(base.cursor_speed);
     let dpad_speed = ud_double(ud, &profile_key(name, "dpadSpeed")).unwrap_or(base.dpad_speed);
     let scroll_speed = ud_double(ud, &profile_key(name, "scrollSpeed")).unwrap_or(base.scroll_speed);
-    let deadzone = ud_double(ud, &profile_key(name, "deadzone")).unwrap_or(base.deadzone);
+    let deadzone = ud_double(ud, &profile_key(name, "deadzone")).map(|v| v as f32).unwrap_or(base.deadzone);
     let poll_hz = ud_double(ud, &profile_key(name, "pollHz")).unwrap_or(base.poll_hz);
     let natural_scroll = ud_bool(ud, &profile_key(name, "naturalScroll")).unwrap_or(base.natural_scroll);
 
@@ -234,7 +234,7 @@ fn load_legacy_profile(ud: &NSUserDefaults, cli: &Config) -> Profile {
     p.cursor_speed = ud_double(ud, "cursorSpeed").unwrap_or(p.cursor_speed);
     p.dpad_speed = ud_double(ud, "dpadSpeed").unwrap_or(p.dpad_speed);
     p.scroll_speed = ud_double(ud, "scrollSpeed").unwrap_or(p.scroll_speed);
-    p.deadzone = ud_double(ud, "deadzone").unwrap_or(p.deadzone);
+    p.deadzone = ud_double(ud, "deadzone").map(|v| v as f32).unwrap_or(p.deadzone);
     p.poll_hz = ud_double(ud, "pollHz").unwrap_or(p.poll_hz);
     p.natural_scroll = ud_bool(ud, "naturalScroll").unwrap_or(p.natural_scroll);
 
