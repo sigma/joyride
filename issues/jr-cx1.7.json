@@ -1,0 +1,15 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-03-31T09:35:14Z",
+  "description": "Regenerate Cargo.lock, verify nix build",
+  "id": "jr-cx1.7",
+  "labels": [],
+  "parent": "jr-cx1",
+  "priority": 2,
+  "status": "open",
+  "title": "Update Nix build",
+  "type": "task",
+  "updated_at": "2026-03-31T09:35:14Z"
+}
