@@ -1,6 +1,8 @@
 {
   "assignee": "",
-  "blocked_by": [],
+  "blocked_by": [
+    "jr-cx1.2"
+  ],
   "blocks": [],
   "created": "2026-03-31T09:35:14Z",
   "description": "Config, ALL_BUTTONS, ALL_ACTIONS, cli_button_map, apply_deadzone",
@@ -11,5 +13,5 @@
   "status": "open",
   "title": "Move config to joyride-config crate",
   "type": "task",
-  "updated_at": "2026-03-31T09:35:14Z"
+  "updated_at": "2026-03-31T09:35:19Z"
 }

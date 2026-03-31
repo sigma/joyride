@@ -3,7 +3,9 @@
   "blocked_by": [
     "jr-cx1.1"
   ],
-  "blocks": [],
+  "blocks": [
+    "jr-cx1.3"
+  ],
   "created": "2026-03-31T09:35:14Z",
   "description": "Root Cargo.toml, crates/ dirs, empty sub-crate manifests",
   "id": "jr-cx1.2",
