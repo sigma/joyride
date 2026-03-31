@@ -1,0 +1,14 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-03-31T16:54:11Z",
+  "description": "Deadzone is f32 in Config, f64 in Profile, f32 in TranslatorConfig, with as-casts losing precision. Fix: use f32 everywhere since the hardware input is f32.",
+  "id": "jr-x7b",
+  "labels": [],
+  "priority": 2,
+  "status": "open",
+  "title": "Unify deadzone type to f32 across all crates",
+  "type": "task",
+  "updated_at": "2026-03-31T16:54:11Z"
+}
