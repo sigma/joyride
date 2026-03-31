@@ -1,7 +1,9 @@
 {
   "assignee": "",
   "blocked_by": [],
-  "blocks": [],
+  "blocks": [
+    "jr-byo.2"
+  ],
   "created": "2026-03-31T15:24:47Z",
   "description": "Info.plist, darwin-module.nix codesign, and TCC reset all use different IDs. Unify to dev.yrh.joyride.",
   "id": "jr-byo.1",
@@ -11,5 +13,5 @@
   "status": "open",
   "title": "Unify bundle ID to dev.yrh.joyride",
   "type": "task",
-  "updated_at": "2026-03-31T15:24:47Z"
+  "updated_at": "2026-03-31T15:24:54Z"
 }
