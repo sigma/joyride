@@ -1,6 +1,8 @@
 {
   "assignee": "",
-  "blocked_by": [],
+  "blocked_by": [
+    "jr-byo.2"
+  ],
   "blocks": [],
   "created": "2026-03-31T15:24:47Z",
   "description": "button_map().clone() every poll tick is wasteful. Cache TranslatorConfig and only rebuild when active profile changes.",
@@ -11,5 +13,5 @@
   "status": "open",
   "title": "Cache TranslatorConfig across frames",
   "type": "task",
-  "updated_at": "2026-03-31T15:24:47Z"
+  "updated_at": "2026-03-31T15:24:54Z"
 }

@@ -3,7 +3,9 @@
   "blocked_by": [
     "jr-byo.1"
   ],
-  "blocks": [],
+  "blocks": [
+    "jr-byo.3"
+  ],
   "created": "2026-03-31T15:24:47Z",
   "description": "MouseEmitter::emit() blocks the main thread with thread::sleep for double-click delays. Use dispatch_after to schedule delayed CGEvents asynchronously.",
   "id": "jr-byo.2",
