@@ -1,0 +1,15 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-03-31T10:00:47Z",
+  "description": "Allow mapping d-pad directions (up/down/left/right) to actions, not just cursor movement. Each d-pad direction becomes a mappable button like the face buttons. When a d-pad direction is mapped to an action, it fires that action instead of moving the cursor. Unmapped directions retain cursor movement behavior. This requires detecting d-pad as discrete button presses (threshold on axis values) rather than just analog values.",
+  "id": "jr-veu.4",
+  "labels": [],
+  "parent": "jr-veu",
+  "priority": 2,
+  "status": "open",
+  "title": "D-pad button mapping",
+  "type": "task",
+  "updated_at": "2026-03-31T10:00:47Z"
+}
