@@ -9,6 +9,7 @@ with lib;
 let
   cfg = config.programs.joyride;
   appName = "joyride";
+  bundleId = "dev.yrh.joyride";
   appDir = "/Users/${cfg.user}/Applications/${appName}.app";
   storePkg = joyridePackages.${pkgs.stdenv.system}.default;
 in
@@ -65,11 +66,11 @@ in
       cp "${storePkg}/Applications/${appName}.app/Contents/MacOS/${appName}" "${appDir}/Contents/MacOS/"
       cp "${storePkg}/Applications/${appName}.app/Contents/Info.plist" "${appDir}/Contents/"
       cp "${storePkg}/Applications/${appName}.app/Contents/Resources/AppIcon.icns" "${appDir}/Contents/Resources/"
-      /usr/bin/codesign --force --sign - --identifier dev.${appName} "${appDir}"
+      /usr/bin/codesign --force --sign - --identifier ${bundleId} "${appDir}"
 
       # Reset accessibility TCC entry so the new binary is recognized.
       # The user will get a one-time prompt on next launch.
-      tccutil reset Accessibility dev.${appName} 2>/dev/null || true
+      tccutil reset Accessibility ${bundleId} 2>/dev/null || true
 
       # Restart the service with the new binary
       launchctl bootstrap "gui/$(id -u ${cfg.user})" /Library/LaunchAgents/org.nixos.${appName}.plist 2>/dev/null || true

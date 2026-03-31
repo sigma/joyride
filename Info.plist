@@ -5,7 +5,7 @@
     <key>CFBundleExecutable</key>
     <string>joyride</string>
     <key>CFBundleIdentifier</key>
-    <string>dev.joyride</string>
+    <string>dev.yrh.joyride</string>
     <key>CFBundleName</key>
     <string>joyride</string>
     <key>CFBundleVersion</key>
