@@ -10,9 +10,15 @@
   "description": "InputTranslator has no concept of hold duration. It only knows was_pressed/is_pressed. Add per-button press timestamp tracking so actions can query 'how long has this been held'. Depends on Action redesign.",
   "id": "jr-2k6",
   "labels": [],
+  "comments": [
+    {
+      "text": "SourceState enum is ready for a HeldSince(Instant) variant when hold-to-repeat is needed. The unified dispatch architecture makes this a straightforward addition.",
+      "timestamp": "2026-03-31T16:16:07Z"
+    }
+  ],
   "priority": 2,
   "status": "open",
   "title": "Add duration tracking to translator for hold-based actions",
   "type": "task",
-  "updated_at": "2026-03-31T15:52:15Z"
+  "updated_at": "2026-03-31T16:16:07Z"
 }
