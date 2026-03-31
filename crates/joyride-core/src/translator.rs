@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::time::Instant;
 
 use joyride_config::{
     apply_deadzone, Action, GamepadState, MouseButtonKind, OutputEvent, OutputEventKind,
@@ -16,15 +17,16 @@ pub struct TranslatorConfig {
     pub button_map: HashMap<String, Action>,
 }
 
-/// Per-source-button state, tracking what was last emitted.
+/// Per-source-button state, tracking what was last emitted and when.
 #[derive(Clone, Debug)]
 enum SourceState {
     /// Not active (button released or never pressed).
     Idle,
-    /// Holding a mouse button (momentary click).
-    MouseHeld(MouseButtonKind),
-    /// Fired a one-shot action (double-click, key press), waiting for release.
-    FiredOnce,
+    /// Holding a mouse button (momentary click) since the given instant.
+    MouseHeld { button: MouseButtonKind, since: Instant },
+    /// Fired a one-shot action (double-click, key press) at the given instant,
+    /// waiting for release.
+    FiredOnce { since: Instant },
 }
 
 /// Pure input-to-output translator. Owns all edge-detection state.
@@ -54,6 +56,16 @@ impl InputTranslator {
         }
     }
 
+    /// Returns how long the given source button has been held, or None if idle.
+    pub fn hold_duration(&self, source: &str) -> Option<std::time::Duration> {
+        match self.source_state.get(source)? {
+            SourceState::Idle => None,
+            SourceState::MouseHeld { since, .. } | SourceState::FiredOnce { since } => {
+                Some(since.elapsed())
+            }
+        }
+    }
+
     /// Returns true if any mouse button is currently held down.
     pub fn has_buttons_pressed(&self) -> bool {
         self.mouse_press_count.values().any(|&count| count > 0)
@@ -74,12 +86,12 @@ impl InputTranslator {
             .filter(|(source, state)| {
                 let current_action = config.button_map.get(source.as_str());
                 match (state, current_action) {
-                    (SourceState::MouseHeld(btn), Some(action)) => {
+                    (SourceState::MouseHeld { button: btn, .. }, Some(action)) => {
                         action_mouse_button(action) != Some(*btn)
                     }
                     (_, None) => true,
                     (_, Some(Action::None)) => true,
-                    (SourceState::FiredOnce, Some(_)) => false, // will reset on release
+                    (SourceState::FiredOnce { .. }, Some(_)) => false, // will reset on release
                     _ => true,
                 }
             })
@@ -87,7 +99,7 @@ impl InputTranslator {
             .collect();
 
         for (source, state) in stale {
-            if let SourceState::MouseHeld(btn) = state {
+            if let SourceState::MouseHeld { button: btn, .. } = state {
                 self.release_mouse(btn, &mut events);
             }
             self.source_state.insert(source, SourceState::Idle);
@@ -219,14 +231,17 @@ impl InputTranslator {
         events: &mut Vec<OutputEvent>,
     ) {
         let current = self.source_state.get(source).cloned().unwrap_or(SourceState::Idle);
-        let was_active = matches!(current, SourceState::MouseHeld(_));
+        let was_active = matches!(current, SourceState::MouseHeld { .. });
 
         if pressed && !was_active {
-            self.source_state.insert(source.to_string(), SourceState::MouseHeld(button));
+            self.source_state.insert(source.to_string(), SourceState::MouseHeld {
+                button,
+                since: Instant::now(),
+            });
             self.press_mouse(button, events);
         } else if !pressed && was_active {
             self.source_state.insert(source.to_string(), SourceState::Idle);
-            if let SourceState::MouseHeld(btn) = current {
+            if let SourceState::MouseHeld { button: btn, .. } = current {
                 self.release_mouse(btn, events);
             }
         }
@@ -243,9 +258,11 @@ impl InputTranslator {
         let current = self.source_state.get(source).cloned().unwrap_or(SourceState::Idle);
 
         if pressed && matches!(current, SourceState::Idle) {
-            self.source_state.insert(source.to_string(), SourceState::FiredOnce);
+            self.source_state.insert(source.to_string(), SourceState::FiredOnce {
+                since: Instant::now(),
+            });
             events.extend(make_events());
-        } else if !pressed && matches!(current, SourceState::FiredOnce) {
+        } else if !pressed && matches!(current, SourceState::FiredOnce { .. }) {
             self.source_state.insert(source.to_string(), SourceState::Idle);
         }
     }
@@ -686,6 +703,34 @@ mod tests {
         let mut t = InputTranslator::new();
         let events = t.translate(&GamepadState::default(), &default_config(), 1.0 / 120.0);
         assert!(events.is_empty());
+    }
+
+    // -- Hold duration tracking --
+
+    #[test]
+    fn hold_duration_none_when_idle() {
+        let t = InputTranslator::new();
+        assert!(t.hold_duration("buttonA").is_none());
+    }
+
+    #[test]
+    fn hold_duration_some_when_pressed() {
+        let mut t = InputTranslator::new();
+        let config = config_with_map(vec![("buttonA", Action::LeftClick)]);
+        t.translate(&state_with_buttons(&["buttonA"]), &config, 0.0);
+        let dur = t.hold_duration("buttonA");
+        assert!(dur.is_some());
+        // Should be very short (just pressed)
+        assert!(dur.unwrap().as_millis() < 100);
+    }
+
+    #[test]
+    fn hold_duration_none_after_release() {
+        let mut t = InputTranslator::new();
+        let config = config_with_map(vec![("buttonA", Action::LeftClick)]);
+        t.translate(&state_with_buttons(&["buttonA"]), &config, 0.0);
+        t.translate(&GamepadState::default(), &config, 0.0);
+        assert!(t.hold_duration("buttonA").is_none());
     }
 
     #[test]
