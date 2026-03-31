@@ -1,0 +1,15 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-03-31T10:00:20Z",
+  "description": "Persist profiles to NSUserDefaults. Each profile stored under a namespaced key (e.g. profile.\u003cname\u003e.cursorSpeed). Save/load/delete profiles. Migrate existing single-profile settings into a 'default' profile.",
+  "id": "jr-2m1.2",
+  "labels": [],
+  "parent": "jr-2m1",
+  "priority": 2,
+  "status": "open",
+  "title": "Profile persistence",
+  "type": "task",
+  "updated_at": "2026-03-31T10:00:20Z"
+}
