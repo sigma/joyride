@@ -1,7 +1,9 @@
 {
   "assignee": "",
   "blocked_by": [],
-  "blocks": [],
+  "blocks": [
+    "jr-2m1.2"
+  ],
   "created": "2026-03-31T10:00:20Z",
   "description": "Define a Profile struct holding all configurable fields (speeds, deadzone, button map, etc). A named default profile is constructed from CLI args. Additional profiles inherit from default and override specific fields. Profiles are identified by name. Config and Settings need restructuring to support multiple profiles.",
   "id": "jr-2m1.1",
@@ -11,5 +13,5 @@
   "status": "open",
   "title": "Profile data model",
   "type": "task",
-  "updated_at": "2026-03-31T10:00:20Z"
+  "updated_at": "2026-03-31T10:00:25Z"
 }
