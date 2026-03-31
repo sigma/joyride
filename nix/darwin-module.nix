@@ -101,8 +101,8 @@ in
           SuccessfulExit = false;
         };
         RunAtLoad = true;
-        StandardOutPath = "/tmp/joyride.log";
-        StandardErrorPath = "/tmp/joyride.log";
+        StandardOutPath = "/Users/${cfg.user}/Library/Logs/joyride.log";
+        StandardErrorPath = "/Users/${cfg.user}/Library/Logs/joyride.log";
       };
     };
   };
