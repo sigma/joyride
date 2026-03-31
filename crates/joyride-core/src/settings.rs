@@ -14,6 +14,8 @@ pub struct Settings {
     pub profile_locked: bool,
     pub debug: bool,
     pub excluded_bundle_ids: Vec<String>,
+    /// Incremented on save/reset to signal cache invalidation.
+    pub generation: u64,
 }
 
 impl Settings {
@@ -36,6 +38,7 @@ impl Settings {
             profile_locked: false,
             debug,
             cli_defaults: cli,
+            generation: 0,
         };
 
         Rc::new(RefCell::new(settings))
@@ -66,7 +69,8 @@ impl Settings {
         self.profiles.iter().position(|p| p.bundle_ids.contains(&bundle_id.to_string()))
     }
 
-    pub fn save(&self) {
+    pub fn save(&mut self) {
+        self.generation += 1;
         let ud = NSUserDefaults::standardUserDefaults();
         ud.setBool_forKey(self.debug, &NSString::from_str("debugLogging"));
         save_profiles(&ud, &self.profiles);
@@ -92,6 +96,7 @@ impl Settings {
         self.active_profile = 0;
         self.profile_locked = false;
         self.debug = self.cli_defaults.debug;
+        self.generation += 1;
 
         self.save();
     }
@@ -308,7 +313,7 @@ mod tests {
     #[test]
     fn save_does_not_panic() {
         let settings = Settings::new(default_config());
-        settings.borrow().save();
+        settings.borrow_mut().save();
     }
 
     #[test]

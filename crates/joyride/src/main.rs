@@ -49,6 +49,9 @@ struct PollContext {
     statusbar: StatusBar,
     last_time: RefCell<Instant>,
     lock_combo_was_held: RefCell<bool>,
+    cached_config: RefCell<Option<TranslatorConfig>>,
+    cached_profile_idx: RefCell<usize>,
+    cached_generation: RefCell<u64>,
 }
 
 fn main() {
@@ -103,6 +106,9 @@ fn main() {
         statusbar,
         last_time: RefCell::new(Instant::now()),
         lock_combo_was_held: RefCell::new(false),
+        cached_config: RefCell::new(None),
+        cached_profile_idx: RefCell::new(usize::MAX),
+        cached_generation: RefCell::new(u64::MAX),
     });
     let ctx_ptr = Box::into_raw(ctx) as *mut c_void;
 
@@ -181,21 +187,32 @@ extern "C" fn poll_callback(ctx_ptr: *mut c_void) {
     *last = now;
     drop(last);
 
-    // Build config snapshot from active profile
-    let settings = ctx.settings.borrow();
-    let config = TranslatorConfig {
-        cursor_speed: settings.cursor_speed(),
-        dpad_speed: settings.dpad_speed(),
-        scroll_speed: settings.scroll_speed(),
-        deadzone: settings.deadzone() as f32,
-        natural_scroll: settings.natural_scroll(),
-        button_map: settings.button_map().clone(),
-    };
-    drop(settings);
+    // Rebuild config snapshot only when the active profile changes
+    {
+        let settings = ctx.settings.borrow();
+        let current_idx = settings.active_profile;
+        let current_gen = settings.generation;
+        let mut cached_idx = ctx.cached_profile_idx.borrow_mut();
+        let mut cached_gen = ctx.cached_generation.borrow_mut();
+        if *cached_idx != current_idx || *cached_gen != current_gen || ctx.cached_config.borrow().is_none() {
+            *cached_idx = current_idx;
+            *cached_gen = current_gen;
+            *ctx.cached_config.borrow_mut() = Some(TranslatorConfig {
+                cursor_speed: settings.cursor_speed(),
+                dpad_speed: settings.dpad_speed(),
+                scroll_speed: settings.scroll_speed(),
+                deadzone: settings.deadzone() as f32,
+                natural_scroll: settings.natural_scroll(),
+                button_map: settings.button_map().clone(),
+            });
+        }
+    }
 
     // Translate input to output events
+    let config = ctx.cached_config.borrow();
+    let config = config.as_ref().unwrap();
     let state = ctx.gamepad.state.borrow();
-    let events = ctx.translator.borrow_mut().translate(&state, &config, dt);
+    let events = ctx.translator.borrow_mut().translate(&state, config, dt);
     drop(state);
 
     // Emit events to the OS
