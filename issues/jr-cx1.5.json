@@ -6,14 +6,15 @@
   "blocks": [
     "jr-cx1.6"
   ],
+  "closed_at": "2026-03-31T09:39:55Z",
   "created": "2026-03-31T09:35:14Z",
   "description": "settings_window.rs, statusbar.rs",
   "id": "jr-cx1.5",
   "labels": [],
   "parent": "jr-cx1",
   "priority": 2,
-  "status": "open",
+  "status": "closed",
   "title": "Move GUI to joyride-ui",
   "type": "task",
-  "updated_at": "2026-03-31T09:35:19Z"
+  "updated_at": "2026-03-31T09:39:55Z"
 }
