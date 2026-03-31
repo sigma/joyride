@@ -1,0 +1,15 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-03-31T09:35:14Z",
+  "description": "mouse.rs, gamepad.rs, appwatcher.rs, settings.rs",
+  "id": "jr-cx1.4",
+  "labels": [],
+  "parent": "jr-cx1",
+  "priority": 2,
+  "status": "open",
+  "title": "Move platform I/O to joyride-core",
+  "type": "task",
+  "updated_at": "2026-03-31T09:35:14Z"
+}
