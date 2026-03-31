@@ -3,7 +3,9 @@
   "blocked_by": [
     "jr-cx1.5"
   ],
-  "blocks": [],
+  "blocks": [
+    "jr-cx1.7"
+  ],
   "created": "2026-03-31T09:35:14Z",
   "description": "main.rs uses workspace crates, move integration tests",
   "id": "jr-cx1.6",
