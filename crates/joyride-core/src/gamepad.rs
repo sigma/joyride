@@ -3,6 +3,7 @@ use std::ffi::c_float;
 use std::ptr::NonNull;
 use std::rc::Rc;
 
+use joyride_config::InputId;
 use log::{debug, info, warn};
 
 use block2::RcBlock;
@@ -126,7 +127,7 @@ impl GamepadManager {
         // D-pad: store analog values and emit discrete button events with hysteresis
         let state = Rc::clone(&self.state);
         let debug = self.debug;
-        let dpad_active = Rc::new(RefCell::new(std::collections::HashSet::<String>::new()));
+        let dpad_active = Rc::new(RefCell::new(std::collections::HashSet::<InputId>::new()));
         let dpad_active_clone = Rc::clone(&dpad_active);
         let handler = RcBlock::new(
             move |_: NonNull<GCControllerDirectionPad>, x: c_float, y: c_float| {
@@ -145,39 +146,34 @@ impl GamepadManager {
         };
 
         // Buttons
-        self.setup_button("buttonA", unsafe { &pad.buttonA() });
-        self.setup_button("buttonB", unsafe { &pad.buttonB() });
-        self.setup_button("buttonX", unsafe { &pad.buttonX() });
-        self.setup_button("buttonY", unsafe { &pad.buttonY() });
-        self.setup_button("leftShoulder", unsafe { &pad.leftShoulder() });
-        self.setup_button("rightShoulder", unsafe { &pad.rightShoulder() });
-        self.setup_button("leftTrigger", unsafe { &pad.leftTrigger() });
-        self.setup_button("rightTrigger", unsafe { &pad.rightTrigger() });
-        self.setup_button("buttonMenu", unsafe { &pad.buttonMenu() });
+        self.setup_button(InputId::ButtonA, unsafe { &pad.buttonA() });
+        self.setup_button(InputId::ButtonB, unsafe { &pad.buttonB() });
+        self.setup_button(InputId::ButtonX, unsafe { &pad.buttonX() });
+        self.setup_button(InputId::ButtonY, unsafe { &pad.buttonY() });
+        self.setup_button(InputId::LeftShoulder, unsafe { &pad.leftShoulder() });
+        self.setup_button(InputId::RightShoulder, unsafe { &pad.rightShoulder() });
+        self.setup_button(InputId::LeftTrigger, unsafe { &pad.leftTrigger() });
+        self.setup_button(InputId::RightTrigger, unsafe { &pad.rightTrigger() });
+        self.setup_button(InputId::ButtonMenu, unsafe { &pad.buttonMenu() });
         if let Some(opts) = unsafe { pad.buttonOptions() } {
-            self.setup_button("buttonOptions", &opts);
+            self.setup_button(InputId::ButtonOptions, &opts);
         }
     }
 
-    fn setup_button(&self, name: &str, button: &GCControllerButtonInput) {
+    fn setup_button(&self, id: InputId, button: &GCControllerButtonInput) {
         let state = Rc::clone(&self.state);
         let debug = self.debug;
-        let name_owned = name.to_string();
         let handler = RcBlock::new(
             move |_: NonNull<GCControllerButtonInput>, _value: c_float, pressed: Bool| {
                 let pressed = pressed.as_bool();
                 let mut s = state.borrow_mut();
                 if pressed {
-                    s.pressed_buttons.insert(name_owned.clone());
+                    s.pressed_buttons.insert(id);
                 } else {
-                    s.pressed_buttons.remove(&name_owned);
+                    s.pressed_buttons.remove(&id);
                 }
                 if debug {
-                    eprintln!(
-                        "joyride: {} {}",
-                        name_owned,
-                        if pressed { "down" } else { "up" }
-                    );
+                    debug!("{} {}", id, if pressed { "down" } else { "up" });
                 }
             },
         );
@@ -204,10 +200,10 @@ mod tests {
     fn gamepad_state_clone() {
         let mut state = GamepadState::default();
         state.left_stick = (0.5, -0.3);
-        state.pressed_buttons.insert("buttonA".to_string());
+        state.pressed_buttons.insert(InputId::ButtonA);
         let cloned = state.clone();
         assert_eq!(cloned.left_stick, (0.5, -0.3));
-        assert!(cloned.pressed_buttons.contains("buttonA"));
+        assert!(cloned.pressed_buttons.contains(&InputId::ButtonA));
     }
 
     #[test]
@@ -225,7 +221,7 @@ mod tests {
     #[test]
     fn is_idle_with_button() {
         let mut state = GamepadState::default();
-        state.pressed_buttons.insert("buttonA".to_string());
+        state.pressed_buttons.insert(InputId::ButtonA);
         assert!(!state.is_idle());
     }
 

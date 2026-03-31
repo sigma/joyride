@@ -4,7 +4,7 @@ use std::rc::Rc;
 
 use objc2_foundation::{NSString, NSUserDefaults};
 
-use joyride_config::{Action, Config, Profile, ALL_INPUTS};
+use joyride_config::{Action, Config, InputId, Profile};
 
 /// Runtime settings backed by NSUserDefaults.
 /// Holds multiple named profiles and tracks the active one.
@@ -64,7 +64,7 @@ impl Settings {
     pub fn deadzone(&self) -> f64 { self.active().deadzone }
     pub fn poll_hz(&self) -> f64 { self.active().poll_hz }
     pub fn natural_scroll(&self) -> bool { self.active().natural_scroll }
-    pub fn button_map(&self) -> &HashMap<String, Action> { &self.active().button_map }
+    pub fn button_map(&self) -> &HashMap<InputId, Action> { &self.active().button_map }
 
     pub fn poll_interval(&self) -> f64 {
         1.0 / self.poll_hz()
@@ -96,8 +96,8 @@ impl Settings {
                      "pollHz", "naturalScroll", "debugLogging"] {
             ud.removeObjectForKey(&NSString::from_str(key));
         }
-        for (input, _) in ALL_INPUTS {
-            ud.removeObjectForKey(&NSString::from_str(&format!("mapping.{input}")));
+        for &input in InputId::ALL {
+            ud.removeObjectForKey(&NSString::from_str(&format!("mapping.{}", input.as_str())));
         }
 
         // Remove profile keys
@@ -161,7 +161,7 @@ fn save_profiles(ud: &NSUserDefaults, profiles: &[Profile]) {
 
         // Button mappings
         for (input, action) in &p.button_map {
-            let key = profile_key(n, &format!("mapping.{input}"));
+            let key = profile_key(n, &format!("mapping.{}", input.as_str()));
             unsafe {
                 ud.setObject_forKey(
                     Some(&NSString::from_str(&action.to_id())),
@@ -197,10 +197,10 @@ fn load_profile(ud: &NSUserDefaults, name: &str, cli: &Config) -> Profile {
         .unwrap_or_default();
 
     let mut button_map = base.button_map;
-    for (input, _) in ALL_INPUTS {
-        let key = profile_key(name, &format!("mapping.{input}"));
+    for &input in InputId::ALL {
+        let key = profile_key(name, &format!("mapping.{}", input.as_str()));
         if let Some(s) = ud_string(ud, &key) {
-            button_map.insert(input.to_string(), Action::from_id(&s));
+            button_map.insert(input, Action::from_id(&s));
         }
     }
 
@@ -227,10 +227,10 @@ fn load_legacy_profile(ud: &NSUserDefaults, cli: &Config) -> Profile {
     p.poll_hz = ud_double(ud, "pollHz").unwrap_or(p.poll_hz);
     p.natural_scroll = ud_bool(ud, "naturalScroll").unwrap_or(p.natural_scroll);
 
-    for (input, _) in ALL_INPUTS {
-        let key = format!("mapping.{input}");
+    for &input in InputId::ALL {
+        let key = format!("mapping.{}", input.as_str());
         if let Some(s) = ud_string(ud, &key) {
-            p.button_map.insert(input.to_string(), Action::from_id(&s));
+            p.button_map.insert(input, Action::from_id(&s));
         }
     }
     p
@@ -244,8 +244,8 @@ fn delete_all_profiles(ud: &NSUserDefaults, profiles: &[Profile]) {
                        "pollHz", "naturalScroll", "bundleIds"] {
             ud.removeObjectForKey(&NSString::from_str(&profile_key(n, field)));
         }
-        for (input, _) in ALL_INPUTS {
-            ud.removeObjectForKey(&NSString::from_str(&profile_key(n, &format!("mapping.{input}"))));
+        for &input in InputId::ALL {
+            ud.removeObjectForKey(&NSString::from_str(&profile_key(n, &format!("mapping.{}", input.as_str()))));
         }
     }
 }
@@ -298,9 +298,9 @@ mod tests {
     fn default_button_map_has_all_inputs() {
         let settings = Settings::new(default_config());
         let s = settings.borrow();
-        for (input_id, _) in ALL_INPUTS {
+        for &input_id in InputId::ALL {
             assert!(
-                s.button_map().contains_key(*input_id),
+                s.button_map().contains_key(&input_id),
                 "missing input mapping: {input_id}"
             );
         }
@@ -310,10 +310,10 @@ mod tests {
     fn default_button_map_cli_assignments() {
         let settings = Settings::new(default_config());
         let s = settings.borrow();
-        assert_eq!(*s.button_map().get("buttonA").unwrap(), Action::LeftClick);
-        assert_eq!(*s.button_map().get("buttonB").unwrap(), Action::RightClick);
-        assert_eq!(*s.button_map().get("buttonX").unwrap(), Action::MiddleClick);
-        assert_eq!(*s.button_map().get("buttonY").unwrap(), Action::None);
+        assert_eq!(*s.button_map().get(&InputId::ButtonA).unwrap(), Action::LeftClick);
+        assert_eq!(*s.button_map().get(&InputId::ButtonB).unwrap(), Action::RightClick);
+        assert_eq!(*s.button_map().get(&InputId::ButtonX).unwrap(), Action::MiddleClick);
+        assert_eq!(*s.button_map().get(&InputId::ButtonY).unwrap(), Action::None);
     }
 
     #[test]
@@ -323,13 +323,13 @@ mod tests {
             let mut s = settings.borrow_mut();
             s.active_mut().cursor_speed = 9999.0;
             s.active_mut().natural_scroll = true;
-            s.active_mut().button_map.insert("buttonA".to_string(), Action::None);
+            s.active_mut().button_map.insert(InputId::ButtonA, Action::None);
             s.reset_to_defaults();
         }
         let s = settings.borrow();
         assert_eq!(s.cursor_speed(), 1500.0);
         assert!(!s.natural_scroll());
-        assert_eq!(*s.button_map().get("buttonA").unwrap(), Action::LeftClick);
+        assert_eq!(*s.button_map().get(&InputId::ButtonA).unwrap(), Action::LeftClick);
     }
 
     #[test]
@@ -353,7 +353,7 @@ mod tests {
         assert_eq!(profile.name, "Default");
         assert_eq!(profile.cursor_speed, 1500.0);
         assert!(profile.bundle_ids.is_empty());
-        assert_eq!(*profile.button_map.get("buttonA").unwrap(), Action::LeftClick);
+        assert_eq!(*profile.button_map.get(&InputId::ButtonA).unwrap(), Action::LeftClick);
     }
 
     #[test]

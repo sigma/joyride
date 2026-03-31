@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::time::Instant;
 
 use joyride_config::{
-    apply_deadzone, Action, GamepadState, MouseButtonKind, OutputEvent, OutputEventKind,
+    apply_deadzone, Action, GamepadState, InputId, MouseButtonKind, OutputEvent, OutputEventKind,
 };
 
 /// Configuration snapshot for one translate() call.
@@ -14,7 +14,7 @@ pub struct TranslatorConfig {
     pub scroll_speed: f64,
     pub deadzone: f32,
     pub natural_scroll: bool,
-    pub button_map: HashMap<String, Action>,
+    pub button_map: HashMap<InputId, Action>,
 }
 
 /// Per-source-button state, tracking what was last emitted and when.
@@ -33,7 +33,7 @@ enum SourceState {
 /// Call translate() each frame with the current gamepad state and config.
 pub struct InputTranslator {
     /// Per-source state keyed by gamepad button name.
-    source_state: HashMap<String, SourceState>,
+    source_state: HashMap<InputId, SourceState>,
     /// Reference count of how many sources are pressing each MouseButtonKind.
     /// MouseDown emitted at 0→1, MouseUp at 1→0.
     mouse_press_count: HashMap<MouseButtonKind, u32>,
@@ -57,8 +57,8 @@ impl InputTranslator {
     }
 
     /// Returns how long the given source button has been held, or None if idle.
-    pub fn hold_duration(&self, source: &str) -> Option<std::time::Duration> {
-        match self.source_state.get(source)? {
+    pub fn hold_duration(&self, source: InputId) -> Option<std::time::Duration> {
+        match self.source_state.get(&source)? {
             SourceState::Idle => None,
             SourceState::MouseHeld { since, .. } | SourceState::FiredOnce { since } => {
                 Some(since.elapsed())
@@ -79,12 +79,12 @@ impl InputTranslator {
     ) -> Vec<OutputEvent> {
         let mut events = Vec::new();
 
-        let stale: Vec<(String, SourceState)> = self
+        let stale: Vec<(InputId, SourceState)> = self
             .source_state
             .iter()
             .filter(|(_, state)| !matches!(state, SourceState::Idle))
             .filter(|(source, state)| {
-                let current_action = config.button_map.get(source.as_str());
+                let current_action = config.button_map.get(source);
                 match (state, current_action) {
                     (SourceState::MouseHeld { button: btn, .. }, Some(action)) => {
                         action_mouse_button(action) != Some(*btn)
@@ -95,7 +95,7 @@ impl InputTranslator {
                     _ => true,
                 }
             })
-            .map(|(source, state)| (source.clone(), state.clone()))
+            .map(|(source, state)| (*source, state.clone()))
             .collect();
 
         for (source, state) in stale {
@@ -131,10 +131,10 @@ impl InputTranslator {
         // D-pad: slow, precise cursor movement.
         // Suppress only the contribution from mapped directions, not the entire axis.
         let (dpx, dpy) = state.dpad;
-        let left_mapped = !matches!(config.button_map.get("dpadLeft"), Some(Action::None) | None);
-        let right_mapped = !matches!(config.button_map.get("dpadRight"), Some(Action::None) | None);
-        let up_mapped = !matches!(config.button_map.get("dpadUp"), Some(Action::None) | None);
-        let down_mapped = !matches!(config.button_map.get("dpadDown"), Some(Action::None) | None);
+        let left_mapped = !matches!(config.button_map.get(&InputId::DpadLeft), Some(Action::None) | None);
+        let right_mapped = !matches!(config.button_map.get(&InputId::DpadRight), Some(Action::None) | None);
+        let up_mapped = !matches!(config.button_map.get(&InputId::DpadUp), Some(Action::None) | None);
+        let down_mapped = !matches!(config.button_map.get(&InputId::DpadDown), Some(Action::None) | None);
         let use_dpx = if (dpx < 0.0 && left_mapped) || (dpx > 0.0 && right_mapped) {
             0.0
         } else {
@@ -163,8 +163,8 @@ impl InputTranslator {
         }
 
         // Buttons: unified action dispatch
-        for (source, action) in &config.button_map {
-            let pressed = state.pressed_buttons.contains(source.as_str());
+        for (&source, action) in &config.button_map {
+            let pressed = state.pressed_buttons.contains(&source);
             self.dispatch_action(source, action, pressed, &mut events);
         }
 
@@ -174,7 +174,7 @@ impl InputTranslator {
     /// Unified action dispatch. Determines behavior from the Action variant.
     fn dispatch_action(
         &mut self,
-        source: &str,
+        source: InputId,
         action: &Action,
         pressed: bool,
         events: &mut Vec<OutputEvent>,
@@ -225,22 +225,22 @@ impl InputTranslator {
     /// Momentary click: track press/release with reference counting.
     fn dispatch_momentary_click(
         &mut self,
-        source: &str,
+        source: InputId,
         button: MouseButtonKind,
         pressed: bool,
         events: &mut Vec<OutputEvent>,
     ) {
-        let current = self.source_state.get(source).cloned().unwrap_or(SourceState::Idle);
+        let current = self.source_state.get(&source).cloned().unwrap_or(SourceState::Idle);
         let was_active = matches!(current, SourceState::MouseHeld { .. });
 
         if pressed && !was_active {
-            self.source_state.insert(source.to_string(), SourceState::MouseHeld {
+            self.source_state.insert(source, SourceState::MouseHeld {
                 button,
                 since: Instant::now(),
             });
             self.press_mouse(button, events);
         } else if !pressed && was_active {
-            self.source_state.insert(source.to_string(), SourceState::Idle);
+            self.source_state.insert(source, SourceState::Idle);
             if let SourceState::MouseHeld { button: btn, .. } = current {
                 self.release_mouse(btn, events);
             }
@@ -250,20 +250,20 @@ impl InputTranslator {
     /// Fire-once: emit events on press edge, ignore while held, reset on release.
     fn dispatch_fire_once(
         &mut self,
-        source: &str,
+        source: InputId,
         pressed: bool,
         make_events: impl FnOnce() -> Vec<OutputEvent>,
         events: &mut Vec<OutputEvent>,
     ) {
-        let current = self.source_state.get(source).cloned().unwrap_or(SourceState::Idle);
+        let current = self.source_state.get(&source).cloned().unwrap_or(SourceState::Idle);
 
         if pressed && matches!(current, SourceState::Idle) {
-            self.source_state.insert(source.to_string(), SourceState::FiredOnce {
+            self.source_state.insert(source, SourceState::FiredOnce {
                 since: Instant::now(),
             });
             events.extend(make_events());
         } else if !pressed && matches!(current, SourceState::FiredOnce { .. }) {
-            self.source_state.insert(source.to_string(), SourceState::Idle);
+            self.source_state.insert(source, SourceState::Idle);
         }
     }
 
@@ -313,16 +313,16 @@ mod tests {
         }
     }
 
-    fn config_with_map(map: Vec<(&str, Action)>) -> TranslatorConfig {
+    fn config_with_map(map: Vec<(&InputId, Action)>) -> TranslatorConfig {
         let mut config = default_config();
-        config.button_map = map.into_iter().map(|(k, v)| (k.to_string(), v)).collect();
+        config.button_map = map.into_iter().map(|(k, v)| (*k, v)).collect();
         config
     }
 
-    fn state_with_buttons(buttons: &[&str]) -> GamepadState {
+    fn state_with_buttons(buttons: &[InputId]) -> GamepadState {
         let mut state = GamepadState::default();
-        for b in buttons {
-            state.pressed_buttons.insert(b.to_string());
+        for &b in buttons {
+            state.pressed_buttons.insert(b);
         }
         state
     }
@@ -387,8 +387,8 @@ mod tests {
         let mut t = InputTranslator::new();
         let mut state = GamepadState::default();
         state.dpad = (1.0, 0.0);
-        state.pressed_buttons.insert("dpadRight".to_string());
-        let config = config_with_map(vec![("dpadRight", Action::LeftClick)]);
+        state.pressed_buttons.insert(InputId::DpadRight);
+        let config = config_with_map(vec![(&InputId::DpadRight, Action::LeftClick)]);
         let events = t.translate(&state, &config, 1.0 / 120.0);
         let move_events: Vec<_> = events.iter().filter(|e| matches!(e.kind, OutputEventKind::MoveCursor { .. })).collect();
         assert!(move_events.is_empty());
@@ -399,7 +399,7 @@ mod tests {
         let mut t = InputTranslator::new();
         let mut state = GamepadState::default();
         state.dpad = (-1.0, 0.0);
-        let config = config_with_map(vec![("dpadRight", Action::LeftClick)]);
+        let config = config_with_map(vec![(&InputId::DpadRight, Action::LeftClick)]);
         let events = t.translate(&state, &config, 1.0 / 120.0);
         let move_events: Vec<_> = events.iter().filter(|e| matches!(e.kind, OutputEventKind::MoveCursor { .. })).collect();
         assert!(!move_events.is_empty(), "unmapped dpadLeft should still move cursor");
@@ -413,7 +413,7 @@ mod tests {
         let mut t = InputTranslator::new();
         let mut state = GamepadState::default();
         state.dpad = (0.0, -1.0);
-        let config = config_with_map(vec![("dpadUp", Action::RightClick)]);
+        let config = config_with_map(vec![(&InputId::DpadUp, Action::RightClick)]);
         let events = t.translate(&state, &config, 1.0 / 120.0);
         let move_events: Vec<_> = events.iter().filter(|e| matches!(e.kind, OutputEventKind::MoveCursor { .. })).collect();
         assert!(!move_events.is_empty(), "unmapped dpadDown should still move cursor");
@@ -460,8 +460,8 @@ mod tests {
     #[test]
     fn button_press_emits_mouse_down() {
         let mut t = InputTranslator::new();
-        let config = config_with_map(vec![("buttonA", Action::LeftClick)]);
-        let state = state_with_buttons(&["buttonA"]);
+        let config = config_with_map(vec![(&InputId::ButtonA, Action::LeftClick)]);
+        let state = state_with_buttons(&[InputId::ButtonA]);
         let events = t.translate(&state, &config, 0.0);
         assert_eq!(event_kinds(&events), vec![&OutputEventKind::MouseDown(MouseButtonKind::Left)]);
     }
@@ -469,8 +469,8 @@ mod tests {
     #[test]
     fn button_release_emits_mouse_up() {
         let mut t = InputTranslator::new();
-        let config = config_with_map(vec![("buttonA", Action::LeftClick)]);
-        t.translate(&state_with_buttons(&["buttonA"]), &config, 0.0);
+        let config = config_with_map(vec![(&InputId::ButtonA, Action::LeftClick)]);
+        t.translate(&state_with_buttons(&[InputId::ButtonA]), &config, 0.0);
         let events = t.translate(&GamepadState::default(), &config, 0.0);
         assert_eq!(event_kinds(&events), vec![&OutputEventKind::MouseUp(MouseButtonKind::Left)]);
     }
@@ -478,8 +478,8 @@ mod tests {
     #[test]
     fn button_held_no_repeat() {
         let mut t = InputTranslator::new();
-        let config = config_with_map(vec![("buttonA", Action::LeftClick)]);
-        let state = state_with_buttons(&["buttonA"]);
+        let config = config_with_map(vec![(&InputId::ButtonA, Action::LeftClick)]);
+        let state = state_with_buttons(&[InputId::ButtonA]);
         let events1 = t.translate(&state, &config, 0.0);
         assert_eq!(events1.len(), 1);
         let events2 = t.translate(&state, &config, 0.0);
@@ -491,8 +491,8 @@ mod tests {
     #[test]
     fn regression_release_on_idle_frame() {
         let mut t = InputTranslator::new();
-        let config = config_with_map(vec![("buttonA", Action::LeftClick)]);
-        t.translate(&state_with_buttons(&["buttonA"]), &config, 0.0);
+        let config = config_with_map(vec![(&InputId::ButtonA, Action::LeftClick)]);
+        t.translate(&state_with_buttons(&[InputId::ButtonA]), &config, 0.0);
         assert!(t.has_buttons_pressed());
 
         let events = t.translate(&GamepadState::default(), &config, 0.0);
@@ -505,8 +505,8 @@ mod tests {
     #[test]
     fn regression_double_click_once_per_press() {
         let mut t = InputTranslator::new();
-        let config = config_with_map(vec![("buttonX", Action::DoubleLeftClick)]);
-        let state = state_with_buttons(&["buttonX"]);
+        let config = config_with_map(vec![(&InputId::ButtonX, Action::DoubleLeftClick)]);
+        let state = state_with_buttons(&[InputId::ButtonX]);
 
         let events1 = t.translate(&state, &config, 0.0);
         assert_eq!(events1.len(), 4);
@@ -530,25 +530,25 @@ mod tests {
     fn regression_double_click_independent_of_single_click() {
         let mut t = InputTranslator::new();
         let config = config_with_map(vec![
-            ("buttonA", Action::LeftClick),
-            ("buttonX", Action::DoubleLeftClick),
+            (&InputId::ButtonA, Action::LeftClick),
+            (&InputId::ButtonX, Action::DoubleLeftClick),
         ]);
 
-        let events = t.translate(&state_with_buttons(&["buttonA"]), &config, 0.0);
+        let events = t.translate(&state_with_buttons(&[InputId::ButtonA]), &config, 0.0);
         assert!(events.iter().any(|e| e.kind == OutputEventKind::MouseDown(MouseButtonKind::Left)));
 
-        let events = t.translate(&state_with_buttons(&["buttonA"]), &config, 0.0);
+        let events = t.translate(&state_with_buttons(&[InputId::ButtonA]), &config, 0.0);
         assert!(events.is_empty());
 
         let events = t.translate(&GamepadState::default(), &config, 0.0);
         assert!(events.iter().any(|e| e.kind == OutputEventKind::MouseUp(MouseButtonKind::Left)));
 
-        let events = t.translate(&state_with_buttons(&["buttonX"]), &config, 0.0);
+        let events = t.translate(&state_with_buttons(&[InputId::ButtonX]), &config, 0.0);
         assert_eq!(events.len(), 4);
 
         t.translate(&GamepadState::default(), &config, 0.0);
 
-        let events = t.translate(&state_with_buttons(&["buttonA"]), &config, 0.0);
+        let events = t.translate(&state_with_buttons(&[InputId::ButtonA]), &config, 0.0);
         assert_eq!(event_kinds(&events), vec![&OutputEventKind::MouseDown(MouseButtonKind::Left)]);
     }
 
@@ -562,8 +562,8 @@ mod tests {
             keycode: 0x00,
             key_name: "A".to_string(),
         };
-        let config = config_with_map(vec![("buttonY", Action::KeyPress(combo))]);
-        let state = state_with_buttons(&["buttonY"]);
+        let config = config_with_map(vec![(&InputId::ButtonY, Action::KeyPress(combo))]);
+        let state = state_with_buttons(&[InputId::ButtonY]);
         let events = t.translate(&state, &config, 0.0);
         assert_eq!(events.len(), 2);
         assert!(matches!(events[0].kind, OutputEventKind::KeyDown { keycode: 0x00, .. }));
@@ -578,8 +578,8 @@ mod tests {
             keycode: 0x31,
             key_name: "Space".to_string(),
         };
-        let config = config_with_map(vec![("buttonY", Action::KeyPress(combo))]);
-        let state = state_with_buttons(&["buttonY"]);
+        let config = config_with_map(vec![(&InputId::ButtonY, Action::KeyPress(combo))]);
+        let state = state_with_buttons(&[InputId::ButtonY]);
 
         let events1 = t.translate(&state, &config, 0.0);
         assert_eq!(events1.len(), 2);
@@ -598,17 +598,17 @@ mod tests {
     fn two_buttons_same_action_no_premature_release() {
         let mut t = InputTranslator::new();
         let config = config_with_map(vec![
-            ("buttonA", Action::LeftClick),
-            ("buttonB", Action::LeftClick),
+            (&InputId::ButtonA, Action::LeftClick),
+            (&InputId::ButtonB, Action::LeftClick),
         ]);
 
-        let events = t.translate(&state_with_buttons(&["buttonA"]), &config, 0.0);
+        let events = t.translate(&state_with_buttons(&[InputId::ButtonA]), &config, 0.0);
         assert_eq!(event_kinds(&events), vec![&OutputEventKind::MouseDown(MouseButtonKind::Left)]);
 
-        let events = t.translate(&state_with_buttons(&["buttonA", "buttonB"]), &config, 0.0);
+        let events = t.translate(&state_with_buttons(&[InputId::ButtonA, InputId::ButtonB]), &config, 0.0);
         assert!(events.is_empty());
 
-        let events = t.translate(&state_with_buttons(&["buttonB"]), &config, 0.0);
+        let events = t.translate(&state_with_buttons(&[InputId::ButtonB]), &config, 0.0);
         assert!(events.is_empty());
         assert!(t.has_buttons_pressed());
 
@@ -621,15 +621,15 @@ mod tests {
     fn two_buttons_same_action_reverse_release_order() {
         let mut t = InputTranslator::new();
         let config = config_with_map(vec![
-            ("buttonA", Action::LeftClick),
-            ("buttonB", Action::LeftClick),
+            (&InputId::ButtonA, Action::LeftClick),
+            (&InputId::ButtonB, Action::LeftClick),
         ]);
 
-        let events = t.translate(&state_with_buttons(&["buttonA", "buttonB"]), &config, 0.0);
+        let events = t.translate(&state_with_buttons(&[InputId::ButtonA, InputId::ButtonB]), &config, 0.0);
         let kinds: Vec<_> = event_kinds(&events);
         assert_eq!(kinds.iter().filter(|k| ***k == OutputEventKind::MouseDown(MouseButtonKind::Left)).count(), 1);
 
-        let events = t.translate(&state_with_buttons(&["buttonA"]), &config, 0.0);
+        let events = t.translate(&state_with_buttons(&[InputId::ButtonA]), &config, 0.0);
         assert!(events.is_empty());
 
         let events = t.translate(&GamepadState::default(), &config, 0.0);
@@ -641,10 +641,10 @@ mod tests {
     #[test]
     fn profile_switch_releases_orphaned_buttons() {
         let mut t = InputTranslator::new();
-        let config1 = config_with_map(vec![("buttonA", Action::LeftClick)]);
-        let config2 = config_with_map(vec![("buttonA", Action::None)]);
+        let config1 = config_with_map(vec![(&InputId::ButtonA, Action::LeftClick)]);
+        let config2 = config_with_map(vec![(&InputId::ButtonA, Action::None)]);
 
-        let events = t.translate(&state_with_buttons(&["buttonA"]), &config1, 0.0);
+        let events = t.translate(&state_with_buttons(&[InputId::ButtonA]), &config1, 0.0);
         assert_eq!(event_kinds(&events), vec![&OutputEventKind::MouseDown(MouseButtonKind::Left)]);
         assert!(t.has_buttons_pressed());
 
@@ -656,24 +656,24 @@ mod tests {
     #[test]
     fn profile_switch_remapped_button_releases_old() {
         let mut t = InputTranslator::new();
-        let config1 = config_with_map(vec![("buttonA", Action::LeftClick)]);
-        let config2 = config_with_map(vec![("buttonA", Action::RightClick)]);
+        let config1 = config_with_map(vec![(&InputId::ButtonA, Action::LeftClick)]);
+        let config2 = config_with_map(vec![(&InputId::ButtonA, Action::RightClick)]);
 
-        t.translate(&state_with_buttons(&["buttonA"]), &config1, 0.0);
+        t.translate(&state_with_buttons(&[InputId::ButtonA]), &config1, 0.0);
 
         let flush = t.flush_stale_buttons(&config2);
         assert_eq!(event_kinds(&flush), vec![&OutputEventKind::MouseUp(MouseButtonKind::Left)]);
 
-        let events = t.translate(&state_with_buttons(&["buttonA"]), &config2, 0.0);
+        let events = t.translate(&state_with_buttons(&[InputId::ButtonA]), &config2, 0.0);
         assert!(events.iter().any(|e| e.kind == OutputEventKind::MouseDown(MouseButtonKind::Right)));
     }
 
     #[test]
     fn profile_switch_no_flush_when_mapping_unchanged() {
         let mut t = InputTranslator::new();
-        let config = config_with_map(vec![("buttonA", Action::LeftClick)]);
+        let config = config_with_map(vec![(&InputId::ButtonA, Action::LeftClick)]);
 
-        t.translate(&state_with_buttons(&["buttonA"]), &config, 0.0);
+        t.translate(&state_with_buttons(&[InputId::ButtonA]), &config, 0.0);
 
         let flush = t.flush_stale_buttons(&config);
         assert!(flush.is_empty());
@@ -686,10 +686,10 @@ mod tests {
     fn multiple_buttons_simultaneous() {
         let mut t = InputTranslator::new();
         let config = config_with_map(vec![
-            ("buttonA", Action::LeftClick),
-            ("buttonB", Action::RightClick),
+            (&InputId::ButtonA, Action::LeftClick),
+            (&InputId::ButtonB, Action::RightClick),
         ]);
-        let state = state_with_buttons(&["buttonA", "buttonB"]);
+        let state = state_with_buttons(&[InputId::ButtonA, InputId::ButtonB]);
         let events = t.translate(&state, &config, 0.0);
         let kinds: Vec<_> = event_kinds(&events);
         assert!(kinds.contains(&&OutputEventKind::MouseDown(MouseButtonKind::Left)));
@@ -710,15 +710,15 @@ mod tests {
     #[test]
     fn hold_duration_none_when_idle() {
         let t = InputTranslator::new();
-        assert!(t.hold_duration("buttonA").is_none());
+        assert!(t.hold_duration(InputId::ButtonA).is_none());
     }
 
     #[test]
     fn hold_duration_some_when_pressed() {
         let mut t = InputTranslator::new();
-        let config = config_with_map(vec![("buttonA", Action::LeftClick)]);
-        t.translate(&state_with_buttons(&["buttonA"]), &config, 0.0);
-        let dur = t.hold_duration("buttonA");
+        let config = config_with_map(vec![(&InputId::ButtonA, Action::LeftClick)]);
+        t.translate(&state_with_buttons(&[InputId::ButtonA]), &config, 0.0);
+        let dur = t.hold_duration(InputId::ButtonA);
         assert!(dur.is_some());
         // Should be very short (just pressed)
         assert!(dur.unwrap().as_millis() < 100);
@@ -727,19 +727,19 @@ mod tests {
     #[test]
     fn hold_duration_none_after_release() {
         let mut t = InputTranslator::new();
-        let config = config_with_map(vec![("buttonA", Action::LeftClick)]);
-        t.translate(&state_with_buttons(&["buttonA"]), &config, 0.0);
+        let config = config_with_map(vec![(&InputId::ButtonA, Action::LeftClick)]);
+        t.translate(&state_with_buttons(&[InputId::ButtonA]), &config, 0.0);
         t.translate(&GamepadState::default(), &config, 0.0);
-        assert!(t.hold_duration("buttonA").is_none());
+        assert!(t.hold_duration(InputId::ButtonA).is_none());
     }
 
     #[test]
     fn has_buttons_pressed_tracks_state() {
         let mut t = InputTranslator::new();
-        let config = config_with_map(vec![("buttonA", Action::LeftClick)]);
+        let config = config_with_map(vec![(&InputId::ButtonA, Action::LeftClick)]);
         assert!(!t.has_buttons_pressed());
 
-        t.translate(&state_with_buttons(&["buttonA"]), &config, 0.0);
+        t.translate(&state_with_buttons(&[InputId::ButtonA]), &config, 0.0);
         assert!(t.has_buttons_pressed());
 
         t.translate(&GamepadState::default(), &config, 0.0);

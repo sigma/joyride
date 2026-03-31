@@ -20,7 +20,7 @@ pub struct GamepadState {
     pub left_stick: (f32, f32),
     pub right_stick: (f32, f32),
     pub dpad: (f32, f32),
-    pub pressed_buttons: HashSet<String>,
+    pub pressed_buttons: HashSet<InputId>,
 }
 
 impl GamepadState {
@@ -69,8 +69,106 @@ pub trait EventEmitter {
 }
 
 
-/// Gamepad input sources that can be mapped to actions.
-/// D-pad directions are treated as discrete buttons when mapped.
+/// A gamepad input source that can be mapped to an action.
+/// Using an enum instead of strings ensures typos are caught at compile time.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum InputId {
+    ButtonA,
+    ButtonB,
+    ButtonX,
+    ButtonY,
+    LeftShoulder,
+    RightShoulder,
+    LeftTrigger,
+    RightTrigger,
+    ButtonMenu,
+    ButtonOptions,
+    DpadUp,
+    DpadDown,
+    DpadLeft,
+    DpadRight,
+}
+
+impl InputId {
+    /// All input IDs in canonical order.
+    pub const ALL: &[InputId] = &[
+        InputId::ButtonA, InputId::ButtonB, InputId::ButtonX, InputId::ButtonY,
+        InputId::LeftShoulder, InputId::RightShoulder,
+        InputId::LeftTrigger, InputId::RightTrigger,
+        InputId::ButtonMenu, InputId::ButtonOptions,
+        InputId::DpadUp, InputId::DpadDown, InputId::DpadLeft, InputId::DpadRight,
+    ];
+
+    /// Serialization string (used in persistence and settings keys).
+    pub fn as_str(self) -> &'static str {
+        match self {
+            InputId::ButtonA => "buttonA",
+            InputId::ButtonB => "buttonB",
+            InputId::ButtonX => "buttonX",
+            InputId::ButtonY => "buttonY",
+            InputId::LeftShoulder => "leftShoulder",
+            InputId::RightShoulder => "rightShoulder",
+            InputId::LeftTrigger => "leftTrigger",
+            InputId::RightTrigger => "rightTrigger",
+            InputId::ButtonMenu => "buttonMenu",
+            InputId::ButtonOptions => "buttonOptions",
+            InputId::DpadUp => "dpadUp",
+            InputId::DpadDown => "dpadDown",
+            InputId::DpadLeft => "dpadLeft",
+            InputId::DpadRight => "dpadRight",
+        }
+    }
+
+    /// Human-readable display name for UI.
+    pub fn display_name(self) -> &'static str {
+        match self {
+            InputId::ButtonA => "A",
+            InputId::ButtonB => "B",
+            InputId::ButtonX => "X",
+            InputId::ButtonY => "Y",
+            InputId::LeftShoulder => "LB",
+            InputId::RightShoulder => "RB",
+            InputId::LeftTrigger => "LT",
+            InputId::RightTrigger => "RT",
+            InputId::ButtonMenu => "Menu",
+            InputId::ButtonOptions => "Options",
+            InputId::DpadUp => "D-pad Up",
+            InputId::DpadDown => "D-pad Down",
+            InputId::DpadLeft => "D-pad Left",
+            InputId::DpadRight => "D-pad Right",
+        }
+    }
+
+    /// Parse from serialization string. Returns None for unknown strings.
+    /// Parse from serialization string. Returns None for unknown strings.
+    pub fn parse(s: &str) -> Option<Self> {
+        match s {
+            "buttonA" => Some(InputId::ButtonA),
+            "buttonB" => Some(InputId::ButtonB),
+            "buttonX" => Some(InputId::ButtonX),
+            "buttonY" => Some(InputId::ButtonY),
+            "leftShoulder" => Some(InputId::LeftShoulder),
+            "rightShoulder" => Some(InputId::RightShoulder),
+            "leftTrigger" => Some(InputId::LeftTrigger),
+            "rightTrigger" => Some(InputId::RightTrigger),
+            "buttonMenu" => Some(InputId::ButtonMenu),
+            "buttonOptions" => Some(InputId::ButtonOptions),
+            "dpadUp" => Some(InputId::DpadUp),
+            "dpadDown" => Some(InputId::DpadDown),
+            "dpadLeft" => Some(InputId::DpadLeft),
+            "dpadRight" => Some(InputId::DpadRight),
+            _ => None,
+        }
+    }
+}
+
+impl fmt::Display for InputId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.display_name())
+    }
+}
+
+/// Legacy constant for backward compatibility with UI code.
 pub const ALL_INPUTS: &[(&str, &str)] = &[
     ("buttonA", "A"),
     ("buttonB", "B"),
@@ -412,11 +510,17 @@ impl Config {
         Ok(config)
     }
 
-    pub fn cli_button_map(&self) -> HashMap<String, Action> {
+    pub fn cli_button_map(&self) -> HashMap<InputId, Action> {
         let mut m = HashMap::new();
-        m.insert(self.left_click.clone(), Action::LeftClick);
-        m.insert(self.right_click.clone(), Action::RightClick);
-        m.insert(self.middle_click.clone(), Action::MiddleClick);
+        if let Some(id) = InputId::parse(&self.left_click) {
+            m.insert(id, Action::LeftClick);
+        }
+        if let Some(id) = InputId::parse(&self.right_click) {
+            m.insert(id, Action::RightClick);
+        }
+        if let Some(id) = InputId::parse(&self.middle_click) {
+            m.insert(id, Action::MiddleClick);
+        }
         m
     }
 }
@@ -452,7 +556,7 @@ pub struct Profile {
     pub poll_hz: f64,
     pub natural_scroll: bool,
     /// Maps input name → action (e.g. "buttonA" → Action::LeftClick)
-    pub button_map: HashMap<String, Action>,
+    pub button_map: HashMap<InputId, Action>,
 }
 
 impl Profile {
@@ -460,9 +564,9 @@ impl Profile {
     pub fn from_config(config: &Config) -> Self {
         let mut button_map = HashMap::new();
         let cli_map = config.cli_button_map();
-        for (input, _) in ALL_INPUTS {
-            let action = cli_map.get(*input).cloned().unwrap_or(Action::None);
-            button_map.insert(input.to_string(), action);
+        for &input in InputId::ALL {
+            let action = cli_map.get(&input).cloned().unwrap_or(Action::None);
+            button_map.insert(input, action);
         }
         Self {
             name: "Default".to_string(),
@@ -511,7 +615,7 @@ impl Profile {
             deadzone: self.deadzone,
             poll_hz: self.poll_hz,
             natural_scroll: self.natural_scroll,
-            button_map: self.button_map.iter().map(|(k, v)| (k.clone(), v.to_id())).collect(),
+            button_map: self.button_map.iter().map(|(k, v)| (k.as_str().to_string(), v.to_id())).collect(),
         }
     }
 
@@ -526,7 +630,9 @@ impl Profile {
             deadzone: data.deadzone,
             poll_hz: data.poll_hz,
             natural_scroll: data.natural_scroll,
-            button_map: data.button_map.iter().map(|(k, v)| (k.clone(), Action::from_id(v))).collect(),
+            button_map: data.button_map.iter()
+                .filter_map(|(k, v)| InputId::parse(k).map(|id| (id, Action::from_id(v))))
+                .collect(),
         }
     }
 }
@@ -555,22 +661,22 @@ pub const DPAD_DEACTIVATE: f32 = 0.4;
 pub fn apply_dpad_hysteresis(
     x: f32,
     y: f32,
-    active: &mut HashSet<String>,
-    pressed_buttons: &mut HashSet<String>,
+    active: &mut HashSet<InputId>,
+    pressed_buttons: &mut HashSet<InputId>,
 ) {
-    for &(name, value) in &[
-        ("dpadUp", y),
-        ("dpadDown", -y),
-        ("dpadRight", x),
-        ("dpadLeft", -x),
+    for &(id, value) in &[
+        (InputId::DpadUp, y),
+        (InputId::DpadDown, -y),
+        (InputId::DpadRight, x),
+        (InputId::DpadLeft, -x),
     ] {
-        let is_active = active.contains(name);
+        let is_active = active.contains(&id);
         if !is_active && value > DPAD_ACTIVATE {
-            active.insert(name.to_string());
-            pressed_buttons.insert(name.to_string());
+            active.insert(id);
+            pressed_buttons.insert(id);
         } else if is_active && value < DPAD_DEACTIVATE {
-            active.remove(name);
-            pressed_buttons.remove(name);
+            active.remove(&id);
+            pressed_buttons.remove(&id);
         }
     }
 }
@@ -720,17 +826,17 @@ mod tests {
     fn cli_button_map_defaults() {
         let config = Config::parse(&[]).unwrap();
         let map = config.cli_button_map();
-        assert_eq!(*map.get("buttonA").unwrap(), Action::LeftClick);
-        assert_eq!(*map.get("buttonB").unwrap(), Action::RightClick);
-        assert_eq!(*map.get("buttonX").unwrap(), Action::MiddleClick);
+        assert_eq!(*map.get(&InputId::ButtonA).unwrap(), Action::LeftClick);
+        assert_eq!(*map.get(&InputId::ButtonB).unwrap(), Action::RightClick);
+        assert_eq!(*map.get(&InputId::ButtonX).unwrap(), Action::MiddleClick);
     }
 
     #[test]
     fn cli_button_map_overridden() {
         let config = Config::parse(&args(&["--left-click", "buttonY"])).unwrap();
         let map = config.cli_button_map();
-        assert_eq!(*map.get("buttonY").unwrap(), Action::LeftClick);
-        assert!(!map.contains_key("buttonA"));
+        assert_eq!(*map.get(&InputId::ButtonY).unwrap(), Action::LeftClick);
+        assert!(!map.contains_key(&InputId::ButtonA));
     }
 
     #[test]
@@ -795,69 +901,69 @@ mod tests {
 
     #[test]
     fn dpad_hysteresis_activate_above_threshold() {
-        let mut active = HashSet::new();
-        let mut pressed = HashSet::new();
+        let mut active: HashSet<InputId> = HashSet::new();
+        let mut pressed: HashSet<InputId> = HashSet::new();
         apply_dpad_hysteresis(0.7, 0.0, &mut active, &mut pressed);
-        assert!(pressed.contains("dpadRight"));
-        assert!(!pressed.contains("dpadLeft"));
+        assert!(pressed.contains(&InputId::DpadRight));
+        assert!(!pressed.contains(&InputId::DpadLeft));
     }
 
     #[test]
     fn dpad_hysteresis_no_flicker_in_dead_band() {
-        let mut active = HashSet::new();
-        let mut pressed = HashSet::new();
+        let mut active: HashSet<InputId> = HashSet::new();
+        let mut pressed: HashSet<InputId> = HashSet::new();
 
         // Go above activate threshold
         apply_dpad_hysteresis(0.7, 0.0, &mut active, &mut pressed);
-        assert!(pressed.contains("dpadRight"));
+        assert!(pressed.contains(&InputId::DpadRight));
 
         // Drop to 0.45 (below activate but above deactivate) — should stay active
         apply_dpad_hysteresis(0.45, 0.0, &mut active, &mut pressed);
-        assert!(pressed.contains("dpadRight"), "should not deactivate in dead band");
+        assert!(pressed.contains(&InputId::DpadRight), "should not deactivate in dead band");
 
         // Oscillate back to 0.55 — still active, no flicker
         apply_dpad_hysteresis(0.55, 0.0, &mut active, &mut pressed);
-        assert!(pressed.contains("dpadRight"));
+        assert!(pressed.contains(&InputId::DpadRight));
     }
 
     #[test]
     fn dpad_hysteresis_deactivate_below_threshold() {
-        let mut active = HashSet::new();
-        let mut pressed = HashSet::new();
+        let mut active: HashSet<InputId> = HashSet::new();
+        let mut pressed: HashSet<InputId> = HashSet::new();
 
         // Activate
         apply_dpad_hysteresis(0.7, 0.0, &mut active, &mut pressed);
-        assert!(pressed.contains("dpadRight"));
+        assert!(pressed.contains(&InputId::DpadRight));
 
         // Drop below deactivate threshold
         apply_dpad_hysteresis(0.3, 0.0, &mut active, &mut pressed);
-        assert!(!pressed.contains("dpadRight"));
+        assert!(!pressed.contains(&InputId::DpadRight));
     }
 
     #[test]
     fn dpad_hysteresis_full_cycle() {
-        let mut active = HashSet::new();
-        let mut pressed = HashSet::new();
+        let mut active: HashSet<InputId> = HashSet::new();
+        let mut pressed: HashSet<InputId> = HashSet::new();
 
         // Not active initially
         apply_dpad_hysteresis(0.55, 0.0, &mut active, &mut pressed);
-        assert!(!pressed.contains("dpadRight"), "0.55 < activate threshold");
+        assert!(!pressed.contains(&InputId::DpadRight), "0.55 < activate threshold");
 
         // Cross activate
         apply_dpad_hysteresis(0.65, 0.0, &mut active, &mut pressed);
-        assert!(pressed.contains("dpadRight"));
+        assert!(pressed.contains(&InputId::DpadRight));
 
         // Stay in dead band
         apply_dpad_hysteresis(0.45, 0.0, &mut active, &mut pressed);
-        assert!(pressed.contains("dpadRight"), "still in dead band");
+        assert!(pressed.contains(&InputId::DpadRight), "still in dead band");
 
         // Cross deactivate
         apply_dpad_hysteresis(0.35, 0.0, &mut active, &mut pressed);
-        assert!(!pressed.contains("dpadRight"));
+        assert!(!pressed.contains(&InputId::DpadRight));
 
         // Re-activate
         apply_dpad_hysteresis(0.65, 0.0, &mut active, &mut pressed);
-        assert!(pressed.contains("dpadRight"));
+        assert!(pressed.contains(&InputId::DpadRight));
     }
 
     #[test]
@@ -928,7 +1034,7 @@ mod tests {
         assert_eq!(imported.len(), 1);
         assert_eq!(imported[0].name, profile.name);
         assert_eq!(imported[0].cursor_speed, profile.cursor_speed);
-        assert_eq!(imported[0].button_map.get("buttonA"), profile.button_map.get("buttonA"));
+        assert_eq!(imported[0].button_map.get(&InputId::ButtonA), profile.button_map.get(&InputId::ButtonA));
     }
 
     #[test]
@@ -948,11 +1054,11 @@ mod tests {
             keycode: 0x00,
             key_name: "A".to_string(),
         };
-        profile.button_map.insert("buttonY".to_string(), Action::KeyPress(combo.clone()));
+        profile.button_map.insert(InputId::ButtonY, Action::KeyPress(combo.clone()));
         let json = export_profiles_json(&[profile]).unwrap();
         let imported = import_profiles_json(&json).unwrap();
         assert_eq!(
-            *imported[0].button_map.get("buttonY").unwrap(),
+            *imported[0].button_map.get(&InputId::ButtonY).unwrap(),
             Action::KeyPress(combo),
         );
     }

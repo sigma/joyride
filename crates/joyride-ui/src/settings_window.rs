@@ -7,7 +7,7 @@ use objc2::{define_class, msg_send, sel, DeclaredClass, MainThreadOnly};
 use objc2_app_kit::*;
 use objc2_foundation::*;
 
-use joyride_config::{format_value, Action, ALL_ACTIONS, ALL_INPUTS};
+use joyride_config::{format_value, Action, InputId, ALL_ACTIONS};
 use joyride_core::settings::Settings;
 
 // MARK: - Window delegate
@@ -106,7 +106,7 @@ define_class!(
 
 struct MappingIvars {
     settings: Rc<RefCell<Settings>>,
-    button_name: String,
+    input_id: InputId,
 }
 
 define_class!(
@@ -123,7 +123,7 @@ define_class!(
             if idx >= 0 && (idx as usize) < ALL_ACTIONS.len() {
                 let action = Action::from_id(ALL_ACTIONS[idx as usize].0);
                 let mut s = iv.settings.borrow_mut();
-                s.active_mut().button_map.insert(iv.button_name.clone(), action);
+                s.active_mut().button_map.insert(iv.input_id, action);
                 s.save();
             }
         }
@@ -169,7 +169,7 @@ struct TrackedToggle {
 
 struct TrackedMapping {
     popup: Retained<NSPopUpButton>,
-    button_id: String,
+    input_id: InputId,
 }
 
 // MARK: - Settings window
@@ -240,7 +240,7 @@ impl SettingsWindow {
             // Profile selector target
             let profile_target = mtm.alloc::<MappingTarget>().set_ivars(MappingIvars {
                 settings: Rc::clone(settings),
-                button_name: "__profile_select__".to_string(),
+                input_id: InputId::ButtonA,
             });
             let profile_target: Retained<MappingTarget> = unsafe { msg_send![super(profile_target), init] };
             unsafe {
@@ -284,10 +284,10 @@ impl SettingsWindow {
         // -- Button Mapping --
         add_spacer(&stack, 8.0);
         add_header(&stack, "Button Mapping", mtm);
-        for (btn_id, btn_display) in ALL_INPUTS {
-            let current_id = p.button_map.get(*btn_id).map(|a| a.to_id()).unwrap_or_else(|| "none".to_string());
+        for &input_id in InputId::ALL {
+            let current_id = p.button_map.get(&input_id).map(|a| a.to_id()).unwrap_or_else(|| "none".to_string());
             let current = current_id.as_str();
-            let (t, tm) = add_mapping(&stack, btn_display, settings, btn_id, current, mtm);
+            let (t, tm) = add_mapping(&stack, input_id.display_name(), settings, input_id, current, mtm);
             retained.push(t); mappings.push(tm);
         }
 
@@ -342,7 +342,7 @@ impl SettingsWindow {
                 tt.switch.setState(if on { 1 } else { 0 });
             }
             for tm in &mappings {
-                let action_id = p.button_map.get(&tm.button_id).map(|a| a.to_id()).unwrap_or_else(|| "none".to_string());
+                let action_id = p.button_map.get(&tm.input_id).map(|a| a.to_id()).unwrap_or_else(|| "none".to_string());
                 let action = action_id.as_str();
                 let idx = ALL_ACTIONS.iter()
                     .position(|(id, _)| *id == action)
@@ -508,11 +508,11 @@ fn add_toggle(
 
 fn add_mapping(
     stack: &NSStackView, button_display: &str, settings: &Rc<RefCell<Settings>>,
-    button_id: &str, current_action: &str, mtm: MainThreadMarker,
+    input_id: InputId, current_action: &str, mtm: MainThreadMarker,
 ) -> (Retained<NSObject>, TrackedMapping) {
     let target = mtm.alloc::<MappingTarget>().set_ivars(MappingIvars {
         settings: Rc::clone(settings),
-        button_name: button_id.to_string(),
+        input_id,
     });
     let target: Retained<MappingTarget> = unsafe { msg_send![super(target), init] };
 
@@ -545,7 +545,7 @@ fn add_mapping(
     row.setSpacing(8.0);
     stack.addArrangedSubview(&row);
 
-    let tracked = TrackedMapping { popup, button_id: button_id.to_string() };
+    let tracked = TrackedMapping { popup, input_id };
     (Retained::into_super(target), tracked)
 }
 

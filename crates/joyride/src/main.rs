@@ -151,8 +151,8 @@ extern "C" fn poll_callback(ctx_ptr: *mut c_void) {
     // Detect Menu+Options combo for profile lock toggle
     {
         let state = ctx.gamepad.state.borrow();
-        let combo_held = state.pressed_buttons.contains("buttonMenu")
-            && state.pressed_buttons.contains("buttonOptions");
+        let combo_held = state.pressed_buttons.contains(&joyride_config::InputId::ButtonMenu)
+            && state.pressed_buttons.contains(&joyride_config::InputId::ButtonOptions);
         let mut was_held = ctx.lock_combo_was_held.borrow_mut();
         if combo_held && !*was_held {
             let mut settings = ctx.settings.borrow_mut();
