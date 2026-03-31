@@ -21,6 +21,16 @@ pub struct GamepadState {
     pub pressed_buttons: HashSet<String>,
 }
 
+impl GamepadState {
+    /// Returns true if all inputs are at their neutral positions.
+    pub fn is_idle(&self) -> bool {
+        self.left_stick == (0.0, 0.0)
+            && self.right_stick == (0.0, 0.0)
+            && self.dpad == (0.0, 0.0)
+            && self.pressed_buttons.is_empty()
+    }
+}
+
 pub struct GamepadManager {
     pub state: Rc<RefCell<GamepadState>>,
     debug: bool,
@@ -221,6 +231,25 @@ mod tests {
         let cloned = state.clone();
         assert_eq!(cloned.left_stick, (0.5, -0.3));
         assert!(cloned.pressed_buttons.contains("buttonA"));
+    }
+
+    #[test]
+    fn is_idle_default() {
+        assert!(GamepadState::default().is_idle());
+    }
+
+    #[test]
+    fn is_idle_with_stick() {
+        let mut state = GamepadState::default();
+        state.left_stick = (0.5, 0.0);
+        assert!(!state.is_idle());
+    }
+
+    #[test]
+    fn is_idle_with_button() {
+        let mut state = GamepadState::default();
+        state.pressed_buttons.insert("buttonA".to_string());
+        assert!(!state.is_idle());
     }
 
     #[test]

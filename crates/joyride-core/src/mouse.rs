@@ -300,4 +300,65 @@ mod tests {
         emitter.update_button(MouseButtonKind::Right, true);
         assert_eq!(emitter.button_state.get(&MouseButtonKind::Right), Some(&true));
     }
+
+    #[test]
+    fn has_buttons_pressed_empty() {
+        let emitter = MouseEmitter::new();
+        assert!(!emitter.has_buttons_pressed());
+    }
+
+    #[test]
+    fn has_buttons_pressed_after_press() {
+        let mut emitter = MouseEmitter::new();
+        emitter.update_button(MouseButtonKind::Left, true);
+        assert!(emitter.has_buttons_pressed());
+    }
+
+    #[test]
+    fn has_buttons_pressed_after_release() {
+        let mut emitter = MouseEmitter::new();
+        emitter.update_button(MouseButtonKind::Left, true);
+        emitter.update_button(MouseButtonKind::Left, false);
+        assert!(!emitter.has_buttons_pressed());
+    }
+
+    /// Regression: releasing a gamepad button with all sticks idle must still
+    /// allow the poll loop to dispatch the mouse-up event. The early-return
+    /// guard uses `GamepadState::is_idle() && !emitter.has_buttons_pressed()`.
+    /// If the emitter still has a button pressed, the frame must NOT be skipped.
+    #[test]
+    fn idle_gamepad_with_pressed_emitter_must_not_skip() {
+        use joyride_config::Action;
+        use crate::gamepad::GamepadState;
+
+        let mut emitter = MouseEmitter::new();
+        let state = GamepadState::default(); // all idle
+
+        // Simulate: button was pressed last frame
+        emitter.update_button(MouseButtonKind::Left, true);
+
+        // Gamepad is idle (button released), but emitter still thinks Left is down
+        assert!(state.is_idle());
+        assert!(emitter.has_buttons_pressed());
+
+        // The poll loop guard should NOT early-return here:
+        let should_skip = state.is_idle() && !emitter.has_buttons_pressed();
+        assert!(!should_skip, "must not skip frame when emitter has buttons pressed");
+
+        // Now dispatch the release — this is what the poll loop does
+        let action = Action::LeftClick;
+        let pressed = state.pressed_buttons.contains("buttonA");
+        assert!(!pressed); // gamepad says released
+        match action {
+            Action::LeftClick => emitter.update_button(MouseButtonKind::Left, pressed),
+            _ => {}
+        }
+
+        // After dispatching release, emitter should have no buttons pressed
+        assert!(!emitter.has_buttons_pressed());
+
+        // Now the guard would correctly skip
+        let should_skip = state.is_idle() && !emitter.has_buttons_pressed();
+        assert!(should_skip);
+    }
 }
