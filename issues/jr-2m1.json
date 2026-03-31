@@ -1,0 +1,14 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-03-31T10:00:07Z",
+  "description": "Support multiple named configuration profiles with per-app auto-switching and manual override.\n\nA profile defines cursor/scroll speeds, deadzone, button mappings, etc. The default profile is the fallback. Other profiles can be bound to specific app bundle IDs, activating automatically when that app is frontmost.\n\nManual override: pressing Menu+Options forces the default profile until the combo is pressed again, which re-enables auto-switching.\n\n```mermaid\ngraph LR\n    1[Profile data model] --\u003e 2[Profile persistence]\n    2 --\u003e 3[Per-app profile activation]\n    2 --\u003e 4[Settings UI for profiles]\n    3 --\u003e 5[Manual override combo]\n```",
+  "id": "jr-2m1",
+  "labels": [],
+  "priority": 1,
+  "status": "open",
+  "title": "Configuration profiles",
+  "type": "epic",
+  "updated_at": "2026-03-31T10:00:07Z"
+}
