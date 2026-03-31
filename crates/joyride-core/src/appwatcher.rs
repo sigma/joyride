@@ -7,6 +7,8 @@ use objc2::rc::Retained;
 use objc2_app_kit::NSWorkspace;
 use objc2_foundation::{NSNotification, NSObjectProtocol, NSString};
 
+/// Monitors the frontmost application via NSWorkspace notifications.
+/// Exposes the current bundle ID for profile switching.
 pub struct AppWatcher {
     /// The bundle ID of the currently frontmost application.
     pub frontmost_bundle_id: Rc<RefCell<String>>,

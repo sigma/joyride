@@ -6,6 +6,8 @@ use objc2_foundation::{NSString, NSUserDefaults};
 
 use joyride_config::{Action, Config, Profile, ALL_INPUTS};
 
+/// Runtime settings backed by NSUserDefaults.
+/// Holds multiple named profiles and tracks the active one.
 pub struct Settings {
     cli_defaults: Config,
     pub profiles: Vec<Profile>,

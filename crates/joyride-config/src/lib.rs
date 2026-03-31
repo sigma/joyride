@@ -1,8 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use std::fmt;
 
-// -- Shared types used by translator, emitter, and tests --
-
+/// Which mouse button to press/release.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub enum MouseButtonKind {
     Left,
@@ -12,6 +11,8 @@ pub enum MouseButtonKind {
     Forward,
 }
 
+/// Snapshot of all gamepad inputs at a point in time.
+/// Updated asynchronously by the GameController framework handlers.
 #[derive(Default, Clone, Debug)]
 pub struct GamepadState {
     pub left_stick: (f32, f32),
@@ -21,6 +22,7 @@ pub struct GamepadState {
 }
 
 impl GamepadState {
+    /// Returns true if all analog inputs are zeroed and no buttons are pressed.
     pub fn is_idle(&self) -> bool {
         self.left_stick == (0.0, 0.0)
             && self.right_stick == (0.0, 0.0)
@@ -199,8 +201,11 @@ pub fn keycode_name(keycode: u16) -> &'static str {
     }
 }
 
+/// What happens when a gamepad input is activated.
+/// Each variant maps to a sequence of [`OutputEvent`]s produced by the translator.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Action {
+    /// No action — input is ignored.
     None,
     LeftClick,
     RightClick,
@@ -297,6 +302,8 @@ pub const ALL_ACTIONS: &[(&str, &str)] = &[
     ("doubleRightClick", "Double Right Click"),
 ];
 
+/// CLI configuration parsed from command-line arguments.
+/// Provides defaults that seed the initial profile.
 pub struct Config {
     pub excluded_bundle_ids: Vec<String>,
     pub cursor_speed: f64,

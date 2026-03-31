@@ -30,6 +30,9 @@ fn source() -> CGEventSource {
 /// System double-click interval (500ms is a safe default).
 const DOUBLE_CLICK_INTERVAL_MS: u128 = 500;
 
+/// Posts output events to macOS via CoreGraphics.
+/// Tracks cursor position and derives click counts from inter-click timing.
+/// All edge-detection logic lives in [`InputTranslator`], not here.
 pub struct MouseEmitter {
     cursor_pos: CGPoint,
     /// Per-button last-click time for deriving click_count.
@@ -282,6 +285,7 @@ fn post_mouse_standalone(button: MouseButtonKind, pressed: bool) {
     }
 }
 
+/// Clamp a point to within display bounds, leaving 1px margin at max edges.
 pub fn clamp_point(
     px: f64, py: f64,
     min_x: f64, min_y: f64,

@@ -14,6 +14,8 @@ use objc2_game_controller::{
 
 pub use joyride_config::GamepadState;
 
+/// Manages GCController connections and input handlers.
+/// Updates a shared [`GamepadState`] from controller events.
 pub struct GamepadManager {
     pub state: Rc<RefCell<GamepadState>>,
     debug: bool,
