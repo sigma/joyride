@@ -54,7 +54,7 @@ impl InputTranslator {
         config: &TranslatorConfig,
         dt: f64,
     ) -> Vec<OutputEvent> {
-        let mut events = Vec::new();
+        let mut events = Vec::with_capacity(8);
         let dz = config.deadzone;
 
         // Left stick: fast cursor movement

@@ -66,18 +66,6 @@ pub trait EventEmitter {
     fn emit(&mut self, events: &[OutputEvent]);
 }
 
-pub const ALL_BUTTONS: &[(&str, &str)] = &[
-    ("buttonA", "A"),
-    ("buttonB", "B"),
-    ("buttonX", "X"),
-    ("buttonY", "Y"),
-    ("leftShoulder", "LB"),
-    ("rightShoulder", "RB"),
-    ("leftTrigger", "LT"),
-    ("rightTrigger", "RT"),
-    ("buttonMenu", "Menu"),
-    ("buttonOptions", "Options"),
-];
 
 /// Gamepad input sources that can be mapped to actions.
 /// D-pad directions are treated as discrete buttons when mapped.
@@ -431,11 +419,23 @@ impl Config {
     }
 }
 
+/// Outcome of CLI argument parsing that isn't a valid config.
 #[derive(Debug)]
 pub enum ParseOutcome {
     Help,
     Error(String),
 }
+
+impl fmt::Display for ParseOutcome {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ParseOutcome::Help => write!(f, "help requested"),
+            ParseOutcome::Error(msg) => write!(f, "{msg}"),
+        }
+    }
+}
+
+impl std::error::Error for ParseOutcome {}
 
 /// A named configuration profile containing all tunable parameters.
 #[derive(Debug, Clone)]
@@ -606,14 +606,6 @@ mod tests {
     fn unknown_flag() {
         let result = Config::parse(&args(&["--bogus"]));
         assert!(matches!(result, Err(ParseOutcome::Error(_))));
-    }
-
-    #[test]
-    fn all_buttons_no_duplicate_ids() {
-        let mut seen = std::collections::HashSet::new();
-        for (id, _) in ALL_BUTTONS {
-            assert!(seen.insert(id), "duplicate button ID: {id}");
-        }
     }
 
     #[test]

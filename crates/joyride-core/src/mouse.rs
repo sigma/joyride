@@ -24,7 +24,7 @@ const NSEC_PER_MSEC: i64 = 1_000_000;
 
 fn source() -> CGEventSource {
     CGEventSource::new(CGEventSourceStateID::CombinedSessionState)
-        .expect("failed to create event source")
+        .expect("CGEventSource creation failed — is Accessibility permission granted?")
 }
 
 /// System double-click interval (500ms is a safe default).

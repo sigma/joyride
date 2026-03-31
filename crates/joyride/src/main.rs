@@ -110,6 +110,9 @@ fn main() {
         cached_profile_idx: RefCell::new(usize::MAX),
         cached_generation: RefCell::new(u64::MAX),
     });
+    // Intentional leak: PollContext lives for the entire process lifetime.
+    // The dispatch timer holds a raw pointer to it; there's no cleanup path
+    // because NSApplication::run() never returns.
     let ctx_ptr = Box::into_raw(ctx) as *mut c_void;
 
     unsafe {
