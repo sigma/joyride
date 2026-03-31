@@ -1,3 +1,6 @@
+use std::collections::HashMap;
+use std::time::Instant;
+
 use core_graphics::display::CGDisplay;
 use core_graphics::event::{
     CGEvent, CGEventFlags, CGEventTapLocation, CGEventType, CGMouseButton, EventField,
@@ -7,21 +10,21 @@ use core_graphics::event_source::{CGEventSource, CGEventSourceStateID};
 use core_graphics::geometry::CGPoint;
 
 pub use joyride_config::MouseButtonKind;
-use joyride_config::{KeyCombo, Modifier};
+use joyride_config::{EventEmitter, Modifier, OutputEvent, OutputEventKind};
 
 fn source() -> CGEventSource {
     CGEventSource::new(CGEventSourceStateID::CombinedSessionState)
         .expect("failed to create event source")
 }
 
+/// System double-click interval (500ms is a safe default).
+const DOUBLE_CLICK_INTERVAL_MS: u128 = 500;
+
 pub struct MouseEmitter {
     cursor_pos: CGPoint,
-    /// Tracks mouse button press/release state for update_button edge detection.
-    button_state: std::collections::HashMap<MouseButtonKind, bool>,
-    /// Separate edge detection for double_click — tracks whether the action
-    /// has already fired for the current gamepad press, to avoid re-firing
-    /// every poll frame.
-    double_click_fired: std::collections::HashSet<MouseButtonKind>,
+    /// Per-button last-click time for deriving click_count.
+    last_click_time: HashMap<MouseButtonKind, Instant>,
+    last_click_count: HashMap<MouseButtonKind, i64>,
 }
 
 impl MouseEmitter {
@@ -31,33 +34,34 @@ impl MouseEmitter {
             .unwrap_or(CGPoint::new(500.0, 500.0));
         Self {
             cursor_pos: pos,
-            button_state: std::collections::HashMap::new(),
-            double_click_fired: std::collections::HashSet::new(),
+            last_click_time: HashMap::new(),
+            last_click_count: HashMap::new(),
         }
     }
 
-    /// Returns true if any mouse button is currently held down.
-    pub fn has_buttons_pressed(&self) -> bool {
-        self.button_state.values().any(|&pressed| pressed)
-    }
-
-    pub fn move_cursor(&mut self, dx: f64, dy: f64) {
+    fn refresh_cursor_pos(&mut self) {
         if let Ok(event) = CGEvent::new(source()) {
             self.cursor_pos = event.location();
         }
+    }
 
+    fn move_cursor(&mut self, dx: f64, dy: f64) {
+        self.refresh_cursor_pos();
         self.cursor_pos.x += dx;
         self.cursor_pos.y += dy;
         self.clamp_to_screen();
 
-        if let Ok(event) =
-            CGEvent::new_mouse_event(source(), CGEventType::MouseMoved, self.cursor_pos, CGMouseButton::Left)
-        {
+        if let Ok(event) = CGEvent::new_mouse_event(
+            source(),
+            CGEventType::MouseMoved,
+            self.cursor_pos,
+            CGMouseButton::Left,
+        ) {
             event.post(CGEventTapLocation::Session);
         }
     }
 
-    pub fn scroll(&self, dx: f64, dy: f64) {
+    fn scroll(&self, dx: f64, dy: f64) {
         if let Ok(event) = CGEvent::new_scroll_event(
             source(),
             ScrollEventUnit::PIXEL,
@@ -70,49 +74,51 @@ impl MouseEmitter {
         }
     }
 
-    pub fn update_button(&mut self, button: MouseButtonKind, pressed: bool) {
-        let was_pressed = self.button_state.get(&button).copied().unwrap_or(false);
-        if pressed == was_pressed {
-            return;
-        }
-        self.button_state.insert(button, pressed);
+    fn mouse_down(&mut self, button: MouseButtonKind) {
+        self.refresh_cursor_pos();
+        let click_count = self.compute_click_count(button);
+        self.post_mouse_event(button, true, click_count);
+    }
 
-        if let Ok(event) = CGEvent::new(source()) {
-            self.cursor_pos = event.location();
-        }
+    fn mouse_up(&mut self, button: MouseButtonKind) {
+        self.refresh_cursor_pos();
+        let click_count = self.last_click_count.get(&button).copied().unwrap_or(1);
+        self.post_mouse_event(button, false, click_count);
+    }
 
+    fn compute_click_count(&mut self, button: MouseButtonKind) -> i64 {
+        let now = Instant::now();
+        let count = if let Some(last) = self.last_click_time.get(&button) {
+            let elapsed = now.duration_since(*last).as_millis();
+            if elapsed < DOUBLE_CLICK_INTERVAL_MS {
+                self.last_click_count.get(&button).copied().unwrap_or(0) + 1
+            } else {
+                1
+            }
+        } else {
+            1
+        };
+        self.last_click_time.insert(button, now);
+        self.last_click_count.insert(button, count);
+        count
+    }
+
+    fn post_mouse_event(&self, button: MouseButtonKind, pressed: bool, click_count: i64) {
         let (event_type, cg_button, button_number) = match (button, pressed) {
             (MouseButtonKind::Left, true) => (CGEventType::LeftMouseDown, CGMouseButton::Left, None),
             (MouseButtonKind::Left, false) => (CGEventType::LeftMouseUp, CGMouseButton::Left, None),
-            (MouseButtonKind::Right, true) => {
-                (CGEventType::RightMouseDown, CGMouseButton::Right, None)
-            }
-            (MouseButtonKind::Right, false) => {
-                (CGEventType::RightMouseUp, CGMouseButton::Right, None)
-            }
-            (MouseButtonKind::Middle, true) => {
-                (CGEventType::OtherMouseDown, CGMouseButton::Center, Some(2))
-            }
-            (MouseButtonKind::Middle, false) => {
-                (CGEventType::OtherMouseUp, CGMouseButton::Center, Some(2))
-            }
-            (MouseButtonKind::Back, true) => {
-                (CGEventType::OtherMouseDown, CGMouseButton::Center, Some(3))
-            }
-            (MouseButtonKind::Back, false) => {
-                (CGEventType::OtherMouseUp, CGMouseButton::Center, Some(3))
-            }
-            (MouseButtonKind::Forward, true) => {
-                (CGEventType::OtherMouseDown, CGMouseButton::Center, Some(4))
-            }
-            (MouseButtonKind::Forward, false) => {
-                (CGEventType::OtherMouseUp, CGMouseButton::Center, Some(4))
-            }
+            (MouseButtonKind::Right, true) => (CGEventType::RightMouseDown, CGMouseButton::Right, None),
+            (MouseButtonKind::Right, false) => (CGEventType::RightMouseUp, CGMouseButton::Right, None),
+            (MouseButtonKind::Middle, true) => (CGEventType::OtherMouseDown, CGMouseButton::Center, Some(2)),
+            (MouseButtonKind::Middle, false) => (CGEventType::OtherMouseUp, CGMouseButton::Center, Some(2)),
+            (MouseButtonKind::Back, true) => (CGEventType::OtherMouseDown, CGMouseButton::Center, Some(3)),
+            (MouseButtonKind::Back, false) => (CGEventType::OtherMouseUp, CGMouseButton::Center, Some(3)),
+            (MouseButtonKind::Forward, true) => (CGEventType::OtherMouseDown, CGMouseButton::Center, Some(4)),
+            (MouseButtonKind::Forward, false) => (CGEventType::OtherMouseUp, CGMouseButton::Center, Some(4)),
         };
 
-        if let Ok(event) =
-            CGEvent::new_mouse_event(source(), event_type, self.cursor_pos, cg_button)
-        {
+        if let Ok(event) = CGEvent::new_mouse_event(source(), event_type, self.cursor_pos, cg_button) {
+            event.set_integer_value_field(EventField::MOUSE_EVENT_CLICK_STATE, click_count);
             if let Some(num) = button_number {
                 event.set_integer_value_field(EventField::MOUSE_EVENT_BUTTON_NUMBER, num);
             }
@@ -120,71 +126,19 @@ impl MouseEmitter {
         }
     }
 
-    /// Reset double-click edge detection so the next press fires again.
-    pub fn reset_double_click(&mut self, button: MouseButtonKind) {
-        self.double_click_fired.remove(&button);
-    }
-
-    pub fn double_click(&mut self, button: MouseButtonKind) {
-        // Only fire once per gamepad press — subsequent poll frames are no-ops
-        if self.double_click_fired.contains(&button) {
-            return;
-        }
-        self.double_click_fired.insert(button);
-
-        if let Ok(event) = CGEvent::new(source()) {
-            self.cursor_pos = event.location();
-        }
-
-        let (down_type, up_type, cg_button, button_number) = match button {
-            MouseButtonKind::Left => (
-                CGEventType::LeftMouseDown, CGEventType::LeftMouseUp,
-                CGMouseButton::Left, None,
-            ),
-            MouseButtonKind::Right => (
-                CGEventType::RightMouseDown, CGEventType::RightMouseUp,
-                CGMouseButton::Right, None,
-            ),
-            MouseButtonKind::Middle => (
-                CGEventType::OtherMouseDown, CGEventType::OtherMouseUp,
-                CGMouseButton::Center, Some(2),
-            ),
-            MouseButtonKind::Back => (
-                CGEventType::OtherMouseDown, CGEventType::OtherMouseUp,
-                CGMouseButton::Center, Some(3),
-            ),
-            MouseButtonKind::Forward => (
-                CGEventType::OtherMouseDown, CGEventType::OtherMouseUp,
-                CGMouseButton::Center, Some(4),
-            ),
-        };
-
-        for click_count in [1, 2] {
-            for event_type in [down_type, up_type] {
-                if let Ok(event) =
-                    CGEvent::new_mouse_event(source(), event_type, self.cursor_pos, cg_button)
-                {
-                    event.set_integer_value_field(
-                        EventField::MOUSE_EVENT_CLICK_STATE,
-                        click_count,
-                    );
-                    if let Some(num) = button_number {
-                        event.set_integer_value_field(EventField::MOUSE_EVENT_BUTTON_NUMBER, num);
-                    }
-                    event.post(CGEventTapLocation::Session);
-                }
-            }
+    fn key_down(&self, keycode: u16, modifiers: &[Modifier]) {
+        let flags = modifiers_to_flags(modifiers);
+        if let Ok(event) = CGEvent::new_keyboard_event(source(), keycode, true) {
+            event.set_flags(flags);
+            event.post(CGEventTapLocation::Session);
         }
     }
 
-    /// Emit a key press (down+up) with modifier flags.
-    pub fn key_press(&self, combo: &KeyCombo) {
-        let flags = modifiers_to_flags(&combo.modifiers);
-        for key_down in [true, false] {
-            if let Ok(event) = CGEvent::new_keyboard_event(source(), combo.keycode, key_down) {
-                event.set_flags(flags);
-                event.post(CGEventTapLocation::Session);
-            }
+    fn key_up(&self, keycode: u16, modifiers: &[Modifier]) {
+        let flags = modifiers_to_flags(modifiers);
+        if let Ok(event) = CGEvent::new_keyboard_event(source(), keycode, false) {
+            event.set_flags(flags);
+            event.post(CGEventTapLocation::Session);
         }
     }
 
@@ -216,6 +170,24 @@ impl MouseEmitter {
     }
 }
 
+impl EventEmitter for MouseEmitter {
+    fn emit(&mut self, events: &[OutputEvent]) {
+        for event in events {
+            if event.delay_ms > 0 {
+                std::thread::sleep(std::time::Duration::from_millis(event.delay_ms as u64));
+            }
+            match &event.kind {
+                OutputEventKind::MoveCursor { dx, dy } => self.move_cursor(*dx, *dy),
+                OutputEventKind::Scroll { dx, dy } => self.scroll(*dx, *dy),
+                OutputEventKind::MouseDown(btn) => self.mouse_down(*btn),
+                OutputEventKind::MouseUp(btn) => self.mouse_up(*btn),
+                OutputEventKind::KeyDown { keycode, modifiers } => self.key_down(*keycode, modifiers),
+                OutputEventKind::KeyUp { keycode, modifiers } => self.key_up(*keycode, modifiers),
+            }
+        }
+    }
+}
+
 pub fn clamp_point(
     px: f64, py: f64,
     min_x: f64, min_y: f64,
@@ -237,8 +209,6 @@ fn modifiers_to_flags(modifiers: &[Modifier]) -> CGEventFlags {
     flags
 }
 
-// MouseButtonKind is re-exported from joyride_config
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -246,7 +216,7 @@ mod tests {
     #[test]
     fn mouse_emitter_constructs() {
         let emitter = MouseEmitter::new();
-        assert!(emitter.button_state.is_empty());
+        assert!(emitter.last_click_time.is_empty());
     }
 
     #[test]
@@ -292,136 +262,5 @@ mod tests {
         let (x, y) = clamp_point(-2000.0, 500.0, -1920.0, 0.0, 1920.0, 1080.0);
         assert_eq!(x, -1920.0);
         assert_eq!(y, 500.0);
-    }
-
-    #[test]
-    fn update_button_tracks_state() {
-        let mut emitter = MouseEmitter::new();
-        emitter.update_button(MouseButtonKind::Left, true);
-        assert_eq!(emitter.button_state.get(&MouseButtonKind::Left), Some(&true));
-        emitter.update_button(MouseButtonKind::Left, false);
-        assert_eq!(emitter.button_state.get(&MouseButtonKind::Left), Some(&false));
-    }
-
-    #[test]
-    fn update_button_idempotent() {
-        let mut emitter = MouseEmitter::new();
-        emitter.update_button(MouseButtonKind::Right, true);
-        // Second press should be no-op (returns early)
-        emitter.update_button(MouseButtonKind::Right, true);
-        assert_eq!(emitter.button_state.get(&MouseButtonKind::Right), Some(&true));
-    }
-
-    #[test]
-    fn has_buttons_pressed_empty() {
-        let emitter = MouseEmitter::new();
-        assert!(!emitter.has_buttons_pressed());
-    }
-
-    #[test]
-    fn has_buttons_pressed_after_press() {
-        let mut emitter = MouseEmitter::new();
-        emitter.update_button(MouseButtonKind::Left, true);
-        assert!(emitter.has_buttons_pressed());
-    }
-
-    #[test]
-    fn has_buttons_pressed_after_release() {
-        let mut emitter = MouseEmitter::new();
-        emitter.update_button(MouseButtonKind::Left, true);
-        emitter.update_button(MouseButtonKind::Left, false);
-        assert!(!emitter.has_buttons_pressed());
-    }
-
-    /// Regression: releasing a gamepad button with all sticks idle must still
-    /// allow the poll loop to dispatch the mouse-up event. The early-return
-    /// guard uses `GamepadState::is_idle() && !emitter.has_buttons_pressed()`.
-    /// If the emitter still has a button pressed, the frame must NOT be skipped.
-    #[test]
-    fn idle_gamepad_with_pressed_emitter_must_not_skip() {
-        use joyride_config::Action;
-        use crate::gamepad::GamepadState;
-
-        let mut emitter = MouseEmitter::new();
-        let state = GamepadState::default(); // all idle
-
-        // Simulate: button was pressed last frame
-        emitter.update_button(MouseButtonKind::Left, true);
-
-        // Gamepad is idle (button released), but emitter still thinks Left is down
-        assert!(state.is_idle());
-        assert!(emitter.has_buttons_pressed());
-
-        // The poll loop guard should NOT early-return here:
-        let should_skip = state.is_idle() && !emitter.has_buttons_pressed();
-        assert!(!should_skip, "must not skip frame when emitter has buttons pressed");
-
-        // Now dispatch the release — this is what the poll loop does
-        let action = Action::LeftClick;
-        let pressed = state.pressed_buttons.contains("buttonA");
-        assert!(!pressed); // gamepad says released
-        match action {
-            Action::LeftClick => emitter.update_button(MouseButtonKind::Left, pressed),
-            _ => {}
-        }
-
-        // After dispatching release, emitter should have no buttons pressed
-        assert!(!emitter.has_buttons_pressed());
-
-        // Now the guard would correctly skip
-        let should_skip = state.is_idle() && !emitter.has_buttons_pressed();
-        assert!(should_skip);
-    }
-
-    /// Regression: double_click must only fire once per press, not every poll
-    /// frame while the button is held. Repeated calls while held should be
-    /// no-ops, otherwise macOS interprets it as triple/quadruple click.
-    #[test]
-    fn double_click_fires_once_per_press() {
-        let mut emitter = MouseEmitter::new();
-
-        // First call: should mark as fired
-        emitter.double_click(MouseButtonKind::Left);
-        assert!(emitter.double_click_fired.contains(&MouseButtonKind::Left));
-
-        // Second call (simulating next poll frame, button still held):
-        // should be a no-op due to edge detection
-        emitter.double_click(MouseButtonKind::Left);
-        assert!(emitter.double_click_fired.contains(&MouseButtonKind::Left));
-
-        // Release resets for next press
-        emitter.reset_double_click(MouseButtonKind::Left);
-        assert!(!emitter.double_click_fired.contains(&MouseButtonKind::Left));
-
-        // Can fire again after release
-        emitter.double_click(MouseButtonKind::Left);
-        assert!(emitter.double_click_fired.contains(&MouseButtonKind::Left));
-    }
-
-    /// Regression: double_click edge detection must not interfere with
-    /// update_button state. They use separate tracking so a DoubleLeftClick
-    /// mapping on one button doesn't corrupt LeftClick state on another.
-    #[test]
-    fn double_click_does_not_interfere_with_button_state() {
-        let mut emitter = MouseEmitter::new();
-
-        // Single click: press left
-        emitter.update_button(MouseButtonKind::Left, true);
-        assert!(emitter.has_buttons_pressed());
-
-        // Double click fires on a different gamepad button but same mouse button
-        // This should NOT affect the button_state used by update_button
-        emitter.double_click(MouseButtonKind::Left);
-
-        // Reset double-click (gamepad button for double-click released)
-        emitter.reset_double_click(MouseButtonKind::Left);
-
-        // button_state should still show Left as pressed (from update_button)
-        assert_eq!(emitter.button_state.get(&MouseButtonKind::Left), Some(&true));
-        assert!(emitter.has_buttons_pressed());
-
-        // Single click release should still work
-        emitter.update_button(MouseButtonKind::Left, false);
-        assert!(!emitter.has_buttons_pressed());
     }
 }

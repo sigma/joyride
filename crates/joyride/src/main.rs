@@ -7,11 +7,12 @@ use core_foundation::base::TCFType;
 use objc2_app_kit::{NSApplication, NSApplicationActivationPolicy};
 use objc2_foundation::MainThreadMarker;
 
-use joyride_config::{apply_deadzone, Action, Config};
+use joyride_config::{Config, EventEmitter};
 use joyride_core::appwatcher::AppWatcher;
 use joyride_core::gamepad::GamepadManager;
-use joyride_core::mouse::{MouseButtonKind, MouseEmitter};
+use joyride_core::mouse::MouseEmitter;
 use joyride_core::settings::Settings;
+use joyride_core::translator::{InputTranslator, TranslatorConfig};
 use joyride_ui::statusbar::StatusBar;
 
 // Raw libdispatch FFI for timer
@@ -39,11 +40,11 @@ const DISPATCH_TIME_NOW: u64 = 0;
 struct PollContext {
     settings: Rc<RefCell<Settings>>,
     gamepad: Rc<GamepadManager>,
+    translator: RefCell<InputTranslator>,
     emitter: RefCell<MouseEmitter>,
     watcher: AppWatcher,
     statusbar: StatusBar,
     last_time: RefCell<Instant>,
-    /// Tracks whether Menu+Options was held last frame (for edge detection).
     lock_combo_was_held: RefCell<bool>,
 }
 
@@ -85,6 +86,7 @@ fn main() {
     let ctx = Box::new(PollContext {
         settings,
         gamepad,
+        translator: RefCell::new(InputTranslator::new()),
         emitter: RefCell::new(emitter),
         watcher,
         statusbar,
@@ -154,92 +156,39 @@ extern "C" fn poll_callback(ctx_ptr: *mut c_void) {
         }
     }
 
+    // Early-return if gamepad is idle and translator has no pending button state
     let state = ctx.gamepad.state.borrow();
-    if state.is_idle() && !ctx.emitter.borrow().has_buttons_pressed() {
+    if state.is_idle() && !ctx.translator.borrow().has_buttons_pressed() {
         return;
     }
     drop(state);
 
-    let settings = ctx.settings.borrow();
-
-    // Framerate-independent timing
+    // Compute dt
     let now = Instant::now();
     let mut last = ctx.last_time.borrow_mut();
     let dt = now.duration_since(*last).as_secs_f64().min(0.1);
     *last = now;
     drop(last);
 
-    let dz = settings.deadzone() as f32;
-    let bmap = settings.button_map();
+    // Build config snapshot from active profile
+    let settings = ctx.settings.borrow();
+    let config = TranslatorConfig {
+        cursor_speed: settings.cursor_speed(),
+        dpad_speed: settings.dpad_speed(),
+        scroll_speed: settings.scroll_speed(),
+        deadzone: settings.deadzone() as f32,
+        natural_scroll: settings.natural_scroll(),
+        button_map: settings.button_map().clone(),
+    };
+    drop(settings);
+
+    // Translate input to output events
     let state = ctx.gamepad.state.borrow();
-    let mut emitter = ctx.emitter.borrow_mut();
+    let events = ctx.translator.borrow_mut().translate(&state, &config, dt);
+    drop(state);
 
-    // Left stick: fast cursor movement
-    let (lx, ly) = state.left_stick;
-    if lx.abs() > dz || ly.abs() > dz {
-        let x = apply_deadzone(lx, dz);
-        let y = apply_deadzone(ly, dz);
-        let dx = x as f64 * settings.cursor_speed() * dt;
-        let dy = -y as f64 * settings.cursor_speed() * dt;
-        emitter.move_cursor(dx, dy);
-    }
-
-    // D-pad: slow, precise cursor movement (only for unmapped directions)
-    let (dpx, dpy) = state.dpad;
-    let dpad_x_mapped = !matches!(bmap.get("dpadLeft"), Some(Action::None) | None)
-        || !matches!(bmap.get("dpadRight"), Some(Action::None) | None);
-    let dpad_y_mapped = !matches!(bmap.get("dpadUp"), Some(Action::None) | None)
-        || !matches!(bmap.get("dpadDown"), Some(Action::None) | None);
-    let use_dpx = if dpad_x_mapped { 0.0 } else { dpx };
-    let use_dpy = if dpad_y_mapped { 0.0 } else { dpy };
-    if use_dpx.abs() > 0.1 || use_dpy.abs() > 0.1 {
-        let dx = use_dpx as f64 * settings.dpad_speed() * dt;
-        let dy = -use_dpy as f64 * settings.dpad_speed() * dt;
-        emitter.move_cursor(dx, dy);
-    }
-
-    // Right stick: scroll
-    let (rx, ry) = state.right_stick;
-    if rx.abs() > dz || ry.abs() > dz {
-        let x = apply_deadzone(rx, dz);
-        let y = apply_deadzone(ry, dz);
-        let scroll_dir: f64 = if settings.natural_scroll() { -1.0 } else { 1.0 };
-        let sdx = x as f64 * settings.scroll_speed();
-        let sdy = y as f64 * settings.scroll_speed() * scroll_dir;
-        emitter.scroll(sdx, sdy);
-    }
-
-    // Buttons: dispatch based on mapping
-    for (button_name, action) in bmap {
-        let pressed = state.pressed_buttons.contains(button_name.as_str());
-        match action {
-            Action::None => {}
-            Action::LeftClick => emitter.update_button(MouseButtonKind::Left, pressed),
-            Action::RightClick => emitter.update_button(MouseButtonKind::Right, pressed),
-            Action::MiddleClick => emitter.update_button(MouseButtonKind::Middle, pressed),
-            Action::BackClick => emitter.update_button(MouseButtonKind::Back, pressed),
-            Action::ForwardClick => emitter.update_button(MouseButtonKind::Forward, pressed),
-            Action::DoubleLeftClick => {
-                if pressed {
-                    emitter.double_click(MouseButtonKind::Left);
-                } else {
-                    emitter.reset_double_click(MouseButtonKind::Left);
-                }
-            }
-            Action::DoubleRightClick => {
-                if pressed {
-                    emitter.double_click(MouseButtonKind::Right);
-                } else {
-                    emitter.reset_double_click(MouseButtonKind::Right);
-                }
-            }
-            Action::KeyPress(combo) => {
-                if pressed {
-                    emitter.key_press(combo);
-                }
-            }
-        }
-    }
+    // Emit events to the OS
+    ctx.emitter.borrow_mut().emit(&events);
 }
 
 fn check_accessibility() {
@@ -259,7 +208,6 @@ fn check_accessibility() {
             opts.as_concrete_TypeRef() as *const _,
         );
     }
-    // Wait briefly for the user to grant, then check again
     std::thread::sleep(std::time::Duration::from_secs(1));
     if unsafe { accessibility_sys::AXIsProcessTrusted() } {
         eprintln!("joyride: Accessibility permission granted");
