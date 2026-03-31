@@ -2,13 +2,14 @@
   "assignee": "unknown",
   "blocked_by": [],
   "blocks": [],
+  "closed_at": "2026-03-31T17:08:20Z",
   "created": "2026-03-31T16:54:11Z",
   "description": "settings.active_profile is a pub usize directly assigned from poll_callback and UI with no bounds check. Out-of-range index panics in active(). Fix: make private, add set_active_profile() that validates \u003c profiles.len().",
   "id": "jr-t4s",
   "labels": [],
   "priority": 0,
-  "status": "in_progress",
+  "status": "closed",
   "title": "Guard active_profile with bounds-checked setter",
   "type": "task",
-  "updated_at": "2026-03-31T17:06:45Z"
+  "updated_at": "2026-03-31T17:08:20Z"
 }
