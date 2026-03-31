@@ -188,18 +188,26 @@ extern "C" fn poll_callback(ctx_ptr: *mut c_void) {
 
 fn check_accessibility() {
     let trusted = unsafe { accessibility_sys::AXIsProcessTrusted() };
-    if !trusted {
-        eprintln!("joyride: requesting Accessibility permission");
-        let key = core_foundation::string::CFString::new("AXTrustedCheckOptionPrompt");
-        let value = core_foundation::boolean::CFBoolean::true_value();
-        let opts = core_foundation::dictionary::CFDictionary::from_CFType_pairs(&[(
-            key,
-            value.as_CFType(),
-        )]);
-        unsafe {
-            accessibility_sys::AXIsProcessTrustedWithOptions(
-                opts.as_concrete_TypeRef() as *const _,
-            );
-        }
+    if trusted {
+        return;
+    }
+    eprintln!("joyride: Accessibility permission not granted — requesting once");
+    let key = core_foundation::string::CFString::new("AXTrustedCheckOptionPrompt");
+    let value = core_foundation::boolean::CFBoolean::true_value();
+    let opts = core_foundation::dictionary::CFDictionary::from_CFType_pairs(&[(
+        key,
+        value.as_CFType(),
+    )]);
+    unsafe {
+        accessibility_sys::AXIsProcessTrustedWithOptions(
+            opts.as_concrete_TypeRef() as *const _,
+        );
+    }
+    // Wait briefly for the user to grant, then check again
+    std::thread::sleep(std::time::Duration::from_secs(1));
+    if unsafe { accessibility_sys::AXIsProcessTrusted() } {
+        eprintln!("joyride: Accessibility permission granted");
+    } else {
+        eprintln!("joyride: Accessibility permission still pending — cursor control will not work until granted");
     }
 }

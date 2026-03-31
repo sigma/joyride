@@ -24,8 +24,10 @@ define_class!(
     unsafe impl NSWindowDelegate for WindowDelegate {
         #[unsafe(method(windowWillClose:))]
         fn window_will_close(&self, _notification: &NSNotification) {
-            NSApplication::sharedApplication(MainThreadMarker::new().unwrap())
-                .setActivationPolicy(NSApplicationActivationPolicy::Accessory);
+            let app = NSApplication::sharedApplication(MainThreadMarker::new().unwrap());
+            // Hide the app from the dock/cmd-tab but don't change activation policy.
+            // Toggling Accessory↔Regular repeatedly can trigger spurious system prompts.
+            app.hide(None);
         }
     }
 );
