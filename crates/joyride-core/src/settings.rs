@@ -10,6 +10,8 @@ pub struct Settings {
     cli_defaults: Config,
     pub profiles: Vec<Profile>,
     pub active_profile: usize,
+    /// When true, auto-switching is disabled and the default profile is forced.
+    pub profile_locked: bool,
     pub debug: bool,
     pub excluded_bundle_ids: Vec<String>,
 }
@@ -31,6 +33,7 @@ impl Settings {
             excluded_bundle_ids: cli.excluded_bundle_ids.clone(),
             profiles,
             active_profile: 0,
+            profile_locked: false,
             debug,
             cli_defaults: cli,
         };
@@ -87,6 +90,7 @@ impl Settings {
         let default = Profile::from_config(&self.cli_defaults);
         self.profiles = vec![default];
         self.active_profile = 0;
+        self.profile_locked = false;
         self.debug = self.cli_defaults.debug;
 
         self.save();

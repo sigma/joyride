@@ -43,6 +43,8 @@ struct PollContext {
     watcher: AppWatcher,
     statusbar: StatusBar,
     last_time: RefCell<Instant>,
+    /// Tracks whether Menu+Options was held last frame (for edge detection).
+    lock_combo_was_held: RefCell<bool>,
 }
 
 fn main() {
@@ -87,6 +89,7 @@ fn main() {
         watcher,
         statusbar,
         last_time: RefCell::new(Instant::now()),
+        lock_combo_was_held: RefCell::new(false),
     });
     let ctx_ptr = Box::into_raw(ctx) as *mut c_void;
 
@@ -114,7 +117,26 @@ extern "C" fn poll_callback(ctx_ptr: *mut c_void) {
         return;
     }
 
-    // Switch active profile based on frontmost app
+    // Detect Menu+Options combo for profile lock toggle
+    {
+        let state = ctx.gamepad.state.borrow();
+        let combo_held = state.pressed_buttons.contains("buttonMenu")
+            && state.pressed_buttons.contains("buttonOptions");
+        let mut was_held = ctx.lock_combo_was_held.borrow_mut();
+        if combo_held && !*was_held {
+            let mut settings = ctx.settings.borrow_mut();
+            settings.profile_locked = !settings.profile_locked;
+            if settings.profile_locked {
+                settings.active_profile = 0;
+                eprintln!("joyride: profile locked to Default");
+            } else {
+                eprintln!("joyride: profile auto-switching re-enabled");
+            }
+        }
+        *was_held = combo_held;
+    }
+
+    // Switch active profile based on frontmost app (unless locked)
     {
         let bundle_id = ctx.watcher.frontmost_bundle_id.borrow();
         let mut settings = ctx.settings.borrow_mut();
@@ -122,11 +144,13 @@ extern "C" fn poll_callback(ctx_ptr: *mut c_void) {
         if excluded {
             return;
         }
-        let target = settings.profile_for_bundle_id(&bundle_id).unwrap_or(0);
-        if settings.active_profile != target {
-            let name = settings.profiles[target].name.clone();
-            eprintln!("joyride: switched to profile '{name}'");
-            settings.active_profile = target;
+        if !settings.profile_locked {
+            let target = settings.profile_for_bundle_id(&bundle_id).unwrap_or(0);
+            if settings.active_profile != target {
+                let name = settings.profiles[target].name.clone();
+                eprintln!("joyride: switched to profile '{name}'");
+                settings.active_profile = target;
+            }
         }
     }
 
