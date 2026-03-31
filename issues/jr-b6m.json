@@ -4,13 +4,14 @@
   "blocks": [
     "jr-2k6"
   ],
+  "closed_at": "2026-03-31T16:16:07Z",
   "created": "2026-03-31T15:52:09Z",
   "description": "The Action enum requires a new variant + HashMap + process method for each action type. Replace with trait objects or composable descriptors that own their state machine. Each action handles on_press/on_release/on_hold independently. This unblocks: hold-to-repeat, macros, toggle modes, analog triggers, modifier layers.",
   "id": "jr-b6m",
   "labels": [],
   "priority": 2,
-  "status": "in_progress",
+  "status": "closed",
   "title": "Redesign Action from enum to trait-based system",
   "type": "epic",
-  "updated_at": "2026-03-31T16:13:37Z"
+  "updated_at": "2026-03-31T16:16:07Z"
 }
