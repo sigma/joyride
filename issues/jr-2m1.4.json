@@ -1,6 +1,8 @@
 {
   "assignee": "",
-  "blocked_by": [],
+  "blocked_by": [
+    "jr-2m1.2"
+  ],
   "blocks": [],
   "created": "2026-03-31T10:00:20Z",
   "description": "Add profile management to the settings window: create/rename/delete profiles, select which profile to edit, assign bundle IDs to profiles. Show which profile is currently active.",
@@ -11,5 +13,5 @@
   "status": "open",
   "title": "Settings UI for profiles",
   "type": "task",
-  "updated_at": "2026-03-31T10:00:20Z"
+  "updated_at": "2026-03-31T10:00:25Z"
 }
