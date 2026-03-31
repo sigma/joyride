@@ -33,6 +33,109 @@ pub const ALL_INPUTS: &[(&str, &str)] = &[
     ("dpadRight", "D-pad Right"),
 ];
 
+/// Modifier flags for key combos.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Modifier {
+    Command,
+    Control,
+    Option,
+    Shift,
+}
+
+impl Modifier {
+    pub fn display(&self) -> &'static str {
+        match self {
+            Modifier::Command => "⌘",
+            Modifier::Control => "⌃",
+            Modifier::Option => "⌥",
+            Modifier::Shift => "⇧",
+        }
+    }
+
+    pub fn to_id(&self) -> &'static str {
+        match self {
+            Modifier::Command => "cmd",
+            Modifier::Control => "ctrl",
+            Modifier::Option => "opt",
+            Modifier::Shift => "shift",
+        }
+    }
+
+    pub fn from_id(id: &str) -> Option<Self> {
+        match id {
+            "cmd" => Some(Modifier::Command),
+            "ctrl" => Some(Modifier::Control),
+            "opt" => Some(Modifier::Option),
+            "shift" => Some(Modifier::Shift),
+            _ => None,
+        }
+    }
+}
+
+/// A keyboard key combo: modifiers + a virtual keycode.
+#[derive(Debug, Clone, PartialEq)]
+pub struct KeyCombo {
+    pub modifiers: Vec<Modifier>,
+    /// macOS virtual keycode (e.g. 0x00 = A, 0x7C = Right arrow)
+    pub keycode: u16,
+    /// Human-readable key name for display
+    pub key_name: String,
+}
+
+impl KeyCombo {
+    /// Serialize to a compact string like "cmd+shift+0x00" or "ctrl+0x7C"
+    pub fn to_id(&self) -> String {
+        let mut parts: Vec<String> = self.modifiers.iter().map(|m| m.to_id().to_string()).collect();
+        parts.push(format!("0x{:02X}", self.keycode));
+        parts.join("+")
+    }
+
+    /// Deserialize from "cmd+shift+0x00" format
+    pub fn from_id(id: &str) -> Option<Self> {
+        let parts: Vec<&str> = id.split('+').collect();
+        if parts.is_empty() {
+            return None;
+        }
+        let mut modifiers = Vec::new();
+        let mut keycode = None;
+        for part in &parts {
+            if let Some(m) = Modifier::from_id(part) {
+                modifiers.push(m);
+            } else if let Some(hex) = part.strip_prefix("0x") {
+                keycode = u16::from_str_radix(hex, 16).ok();
+            }
+        }
+        let keycode = keycode?;
+        let key_name = keycode_name(keycode).to_string();
+        Some(KeyCombo { modifiers, keycode, key_name })
+    }
+
+    pub fn display(&self) -> String {
+        let mods: String = self.modifiers.iter().map(|m| m.display()).collect();
+        format!("{mods}{}", self.key_name)
+    }
+}
+
+/// Human-readable names for common macOS virtual keycodes.
+pub fn keycode_name(keycode: u16) -> &'static str {
+    match keycode {
+        0x00 => "A", 0x01 => "S", 0x02 => "D", 0x03 => "F",
+        0x04 => "H", 0x05 => "G", 0x06 => "Z", 0x07 => "X",
+        0x08 => "C", 0x09 => "V", 0x0B => "B", 0x0C => "Q",
+        0x0D => "W", 0x0E => "E", 0x0F => "R", 0x10 => "Y",
+        0x11 => "T", 0x12 => "1", 0x13 => "2", 0x14 => "3",
+        0x15 => "4", 0x16 => "6", 0x17 => "5", 0x1D => "0",
+        0x1E => "9", 0x1F => "7", 0x20 => "8",
+        0x24 => "Return", 0x30 => "Tab", 0x31 => "Space",
+        0x33 => "Delete", 0x35 => "Escape",
+        0x7B => "←", 0x7C => "→", 0x7D => "↓", 0x7E => "↑",
+        0x60 => "F5", 0x61 => "F6", 0x62 => "F7", 0x63 => "F3",
+        0x64 => "F8", 0x65 => "F9", 0x67 => "F11", 0x6F => "F12",
+        0x76 => "F4", 0x78 => "F2", 0x7A => "F1",
+        _ => "?",
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Action {
     None,
@@ -43,11 +146,13 @@ pub enum Action {
     ForwardClick,
     DoubleLeftClick,
     DoubleRightClick,
+    /// Emit a keyboard key combo (modifiers + key).
+    KeyPress(KeyCombo),
 }
 
 impl Action {
-    /// All available action variants with their serialization ID and display name.
-    pub fn all() -> &'static [(&'static str, &'static str, Action)] {
+    /// Preset actions for UI dropdown (does not include KeyPress which is dynamic).
+    pub fn presets() -> &'static [(&'static str, &'static str, Action)] {
         &[
             ("none", "None", Action::None),
             ("leftClick", "Left Click", Action::LeftClick),
@@ -61,21 +166,28 @@ impl Action {
     }
 
     /// Serialize to a string ID for persistence.
-    pub fn to_id(&self) -> &'static str {
+    pub fn to_id(&self) -> String {
         match self {
-            Action::None => "none",
-            Action::LeftClick => "leftClick",
-            Action::RightClick => "rightClick",
-            Action::MiddleClick => "middleClick",
-            Action::BackClick => "backClick",
-            Action::ForwardClick => "forwardClick",
-            Action::DoubleLeftClick => "doubleLeftClick",
-            Action::DoubleRightClick => "doubleRightClick",
+            Action::None => "none".to_string(),
+            Action::LeftClick => "leftClick".to_string(),
+            Action::RightClick => "rightClick".to_string(),
+            Action::MiddleClick => "middleClick".to_string(),
+            Action::BackClick => "backClick".to_string(),
+            Action::ForwardClick => "forwardClick".to_string(),
+            Action::DoubleLeftClick => "doubleLeftClick".to_string(),
+            Action::DoubleRightClick => "doubleRightClick".to_string(),
+            Action::KeyPress(combo) => format!("key:{}", combo.to_id()),
         }
     }
 
     /// Deserialize from a string ID. Unknown IDs become None.
     pub fn from_id(id: &str) -> Self {
+        if let Some(combo_str) = id.strip_prefix("key:") {
+            if let Some(combo) = KeyCombo::from_id(combo_str) {
+                return Action::KeyPress(combo);
+            }
+            return Action::None;
+        }
         match id {
             "leftClick" => Action::LeftClick,
             "rightClick" => Action::RightClick,
@@ -89,28 +201,28 @@ impl Action {
     }
 
     /// Human-readable display name.
-    pub fn display_name(&self) -> &'static str {
+    pub fn display_name(&self) -> String {
         match self {
-            Action::None => "None",
-            Action::LeftClick => "Left Click",
-            Action::RightClick => "Right Click",
-            Action::MiddleClick => "Middle Click",
-            Action::BackClick => "Back",
-            Action::ForwardClick => "Forward",
-            Action::DoubleLeftClick => "Double Left Click",
-            Action::DoubleRightClick => "Double Right Click",
+            Action::None => "None".to_string(),
+            Action::LeftClick => "Left Click".to_string(),
+            Action::RightClick => "Right Click".to_string(),
+            Action::MiddleClick => "Middle Click".to_string(),
+            Action::BackClick => "Back".to_string(),
+            Action::ForwardClick => "Forward".to_string(),
+            Action::DoubleLeftClick => "Double Left Click".to_string(),
+            Action::DoubleRightClick => "Double Right Click".to_string(),
+            Action::KeyPress(combo) => combo.display(),
         }
     }
 }
 
 impl fmt::Display for Action {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(self.display_name())
+        f.write_str(&self.display_name())
     }
 }
 
-/// Legacy constant for backward compatibility with UI code.
-/// Prefer `Action::all()` for new code.
+/// Preset actions for UI dropdown (ID + display name).
 pub const ALL_ACTIONS: &[(&str, &str)] = &[
     ("none", "None"),
     ("leftClick", "Left Click"),
@@ -461,7 +573,7 @@ mod tests {
 
     #[test]
     fn action_round_trip() {
-        for (id, _, action) in Action::all() {
+        for (id, _, action) in Action::presets() {
             assert_eq!(Action::from_id(id), *action);
             assert_eq!(action.to_id(), *id);
         }
@@ -481,12 +593,40 @@ mod tests {
 
     #[test]
     fn all_actions_consistent_with_enum() {
-        // Every entry in ALL_ACTIONS should round-trip through Action
         for (id, display) in ALL_ACTIONS {
             let action = Action::from_id(id);
             assert_eq!(action.to_id(), *id);
             assert_eq!(action.display_name(), *display);
         }
+    }
+
+    #[test]
+    fn key_combo_round_trip() {
+        let combo = KeyCombo {
+            modifiers: vec![Modifier::Command, Modifier::Shift],
+            keycode: 0x00,
+            key_name: "A".to_string(),
+        };
+        let action = Action::KeyPress(combo);
+        let id = action.to_id();
+        assert_eq!(id, "key:cmd+shift+0x00");
+        assert_eq!(Action::from_id(&id), action);
+    }
+
+    #[test]
+    fn key_combo_display() {
+        let combo = KeyCombo {
+            modifiers: vec![Modifier::Command],
+            keycode: 0x00,
+            key_name: "A".to_string(),
+        };
+        assert_eq!(Action::KeyPress(combo).display_name(), "⌘A");
+    }
+
+    #[test]
+    fn key_combo_from_invalid() {
+        assert_eq!(Action::from_id("key:"), Action::None);
+        assert_eq!(Action::from_id("key:invalid"), Action::None);
     }
 
     #[test]

@@ -1,9 +1,12 @@
 use core_graphics::display::CGDisplay;
 use core_graphics::event::{
-    CGEvent, CGEventTapLocation, CGEventType, CGMouseButton, EventField, ScrollEventUnit,
+    CGEvent, CGEventFlags, CGEventTapLocation, CGEventType, CGMouseButton, EventField,
+    ScrollEventUnit,
 };
 use core_graphics::event_source::{CGEventSource, CGEventSourceStateID};
 use core_graphics::geometry::CGPoint;
+
+use joyride_config::{KeyCombo, Modifier};
 
 fn source() -> CGEventSource {
     CGEventSource::new(CGEventSourceStateID::CombinedSessionState)
@@ -151,6 +154,17 @@ impl MouseEmitter {
         }
     }
 
+    /// Emit a key press (down+up) with modifier flags.
+    pub fn key_press(&self, combo: &KeyCombo) {
+        let flags = modifiers_to_flags(&combo.modifiers);
+        for key_down in [true, false] {
+            if let Ok(event) = CGEvent::new_keyboard_event(source(), combo.keycode, key_down) {
+                event.set_flags(flags);
+                event.post(CGEventTapLocation::Session);
+            }
+        }
+    }
+
     fn clamp_to_screen(&mut self) {
         let displays = CGDisplay::active_displays().unwrap_or_default();
         if displays.is_empty() {
@@ -185,6 +199,19 @@ pub fn clamp_point(
     max_x: f64, max_y: f64,
 ) -> (f64, f64) {
     (px.clamp(min_x, max_x - 1.0), py.clamp(min_y, max_y - 1.0))
+}
+
+fn modifiers_to_flags(modifiers: &[Modifier]) -> CGEventFlags {
+    let mut flags = CGEventFlags::empty();
+    for m in modifiers {
+        flags |= match m {
+            Modifier::Command => CGEventFlags::CGEventFlagCommand,
+            Modifier::Control => CGEventFlags::CGEventFlagControl,
+            Modifier::Option => CGEventFlags::CGEventFlagAlternate,
+            Modifier::Shift => CGEventFlags::CGEventFlagShift,
+        };
+    }
+    flags
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]

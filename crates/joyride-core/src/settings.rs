@@ -137,7 +137,7 @@ fn save_profiles(ud: &NSUserDefaults, profiles: &[Profile]) {
             let key = profile_key(n, &format!("mapping.{input}"));
             unsafe {
                 ud.setObject_forKey(
-                    Some(&NSString::from_str(action.to_id())),
+                    Some(&NSString::from_str(&action.to_id())),
                     &NSString::from_str(&key),
                 );
             }

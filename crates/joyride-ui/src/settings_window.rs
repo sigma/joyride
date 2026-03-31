@@ -241,7 +241,8 @@ impl SettingsWindow {
         add_spacer(&stack, 8.0);
         add_header(&stack, "Button Mapping", mtm);
         for (btn_id, btn_display) in ALL_INPUTS {
-            let current = p.button_map.get(*btn_id).map(|a| a.to_id()).unwrap_or("none");
+            let current_id = p.button_map.get(*btn_id).map(|a| a.to_id()).unwrap_or_else(|| "none".to_string());
+            let current = current_id.as_str();
             let (t, tm) = add_mapping(&stack, btn_display, settings, btn_id, current, mtm);
             retained.push(t); mappings.push(tm);
         }
@@ -297,7 +298,8 @@ impl SettingsWindow {
                 tt.switch.setState(if on { 1 } else { 0 });
             }
             for tm in &mappings {
-                let action = p.button_map.get(&tm.button_id).map(|a| a.to_id()).unwrap_or("none");
+                let action_id = p.button_map.get(&tm.button_id).map(|a| a.to_id()).unwrap_or_else(|| "none".to_string());
+                let action = action_id.as_str();
                 let idx = ALL_ACTIONS.iter()
                     .position(|(id, _)| *id == action)
                     .unwrap_or(0);

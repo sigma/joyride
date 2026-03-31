@@ -233,6 +233,11 @@ extern "C" fn poll_callback(ctx_ptr: *mut c_void) {
                     emitter.double_click(MouseButtonKind::Right);
                 }
             }
+            Action::KeyPress(combo) => {
+                if pressed {
+                    emitter.key_press(combo);
+                }
+            }
         }
     }
 }
