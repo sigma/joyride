@@ -1,6 +1,8 @@
 use std::collections::{HashMap, HashSet};
 use std::fmt;
 
+use serde::{Deserialize, Serialize};
+
 /// Which mouse button to press/release.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub enum MouseButtonKind {
@@ -476,6 +478,74 @@ impl Profile {
     }
 }
 
+/// Serializable representation of a set of profiles for JSON export/import.
+#[derive(Serialize, Deserialize)]
+pub struct ProfilesExport {
+    pub version: u32,
+    pub profiles: Vec<ProfileData>,
+}
+
+/// Serializable representation of a single profile.
+#[derive(Serialize, Deserialize)]
+pub struct ProfileData {
+    pub name: String,
+    pub bundle_ids: Vec<String>,
+    pub cursor_speed: f64,
+    pub dpad_speed: f64,
+    pub scroll_speed: f64,
+    pub deadzone: f64,
+    pub poll_hz: f64,
+    pub natural_scroll: bool,
+    pub button_map: HashMap<String, String>,
+}
+
+impl Profile {
+    /// Export to a serializable format.
+    pub fn to_export(&self) -> ProfileData {
+        ProfileData {
+            name: self.name.clone(),
+            bundle_ids: self.bundle_ids.clone(),
+            cursor_speed: self.cursor_speed,
+            dpad_speed: self.dpad_speed,
+            scroll_speed: self.scroll_speed,
+            deadzone: self.deadzone,
+            poll_hz: self.poll_hz,
+            natural_scroll: self.natural_scroll,
+            button_map: self.button_map.iter().map(|(k, v)| (k.clone(), v.to_id())).collect(),
+        }
+    }
+
+    /// Import from a serializable format.
+    pub fn from_export(data: &ProfileData) -> Self {
+        Self {
+            name: data.name.clone(),
+            bundle_ids: data.bundle_ids.clone(),
+            cursor_speed: data.cursor_speed,
+            dpad_speed: data.dpad_speed,
+            scroll_speed: data.scroll_speed,
+            deadzone: data.deadzone,
+            poll_hz: data.poll_hz,
+            natural_scroll: data.natural_scroll,
+            button_map: data.button_map.iter().map(|(k, v)| (k.clone(), Action::from_id(v))).collect(),
+        }
+    }
+}
+
+/// Export profiles to JSON string.
+pub fn export_profiles_json(profiles: &[Profile]) -> Result<String, serde_json::Error> {
+    let export = ProfilesExport {
+        version: 1,
+        profiles: profiles.iter().map(|p| p.to_export()).collect(),
+    };
+    serde_json::to_string_pretty(&export)
+}
+
+/// Import profiles from JSON string.
+pub fn import_profiles_json(json: &str) -> Result<Vec<Profile>, serde_json::Error> {
+    let export: ProfilesExport = serde_json::from_str(json)?;
+    Ok(export.profiles.iter().map(Profile::from_export).collect())
+}
+
 /// D-pad hysteresis thresholds: activate at 0.6, deactivate at 0.4.
 pub const DPAD_ACTIVATE: f32 = 0.6;
 /// D-pad hysteresis deactivation threshold.
@@ -845,5 +915,45 @@ mod tests {
     fn format_value_fallback() {
         let result = format_value(42.5, "unknown");
         assert_eq!(result, "42.5");
+    }
+
+    // -- JSON export/import --
+
+    #[test]
+    fn profile_json_round_trip() {
+        let config = Config::parse(&[]).unwrap();
+        let profile = Profile::from_config(&config);
+        let json = export_profiles_json(&[profile.clone()]).unwrap();
+        let imported = import_profiles_json(&json).unwrap();
+        assert_eq!(imported.len(), 1);
+        assert_eq!(imported[0].name, profile.name);
+        assert_eq!(imported[0].cursor_speed, profile.cursor_speed);
+        assert_eq!(imported[0].button_map.get("buttonA"), profile.button_map.get("buttonA"));
+    }
+
+    #[test]
+    fn profile_json_preserves_bundle_ids() {
+        let mut profile = Profile::from_config(&Config::parse(&[]).unwrap());
+        profile.bundle_ids = vec!["com.example.game".to_string()];
+        let json = export_profiles_json(&[profile]).unwrap();
+        let imported = import_profiles_json(&json).unwrap();
+        assert_eq!(imported[0].bundle_ids, vec!["com.example.game"]);
+    }
+
+    #[test]
+    fn profile_json_preserves_key_combo_action() {
+        let mut profile = Profile::from_config(&Config::parse(&[]).unwrap());
+        let combo = KeyCombo {
+            modifiers: vec![Modifier::Command],
+            keycode: 0x00,
+            key_name: "A".to_string(),
+        };
+        profile.button_map.insert("buttonY".to_string(), Action::KeyPress(combo.clone()));
+        let json = export_profiles_json(&[profile]).unwrap();
+        let imported = import_profiles_json(&json).unwrap();
+        assert_eq!(
+            *imported[0].button_map.get("buttonY").unwrap(),
+            Action::KeyPress(combo),
+        );
     }
 }
