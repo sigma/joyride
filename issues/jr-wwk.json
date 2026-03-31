@@ -2,13 +2,14 @@
   "assignee": "unknown",
   "blocked_by": [],
   "blocks": [],
+  "closed_at": "2026-03-31T17:09:08Z",
   "created": "2026-03-31T16:54:11Z",
   "description": "settings_window.rs profile popup reuses MappingTarget with '__profile_select__' key. mappingChanged: indexes into ALL_ACTIONS instead of profile list. With \u003e8 profiles the bounds check silently fails. This is an actual bug.",
   "id": "jr-wwk",
   "labels": [],
   "priority": 0,
-  "status": "in_progress",
+  "status": "closed",
   "title": "Profile selector popup wired to wrong handler",
   "type": "bug",
-  "updated_at": "2026-03-31T17:08:22Z"
+  "updated_at": "2026-03-31T17:09:08Z"
 }
