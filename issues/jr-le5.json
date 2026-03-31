@@ -2,13 +2,14 @@
   "assignee": "unknown",
   "blocked_by": [],
   "blocks": [],
+  "closed_at": "2026-03-31T16:13:29Z",
   "created": "2026-03-31T15:52:09Z",
   "description": "NSUserDefaults is opaque and machine-local. Add JSON export/import for profiles to enable backup, sharing, and version control.",
   "id": "jr-le5",
   "labels": [],
   "priority": 3,
-  "status": "in_progress",
+  "status": "closed",
   "title": "Add settings export/import as JSON",
   "type": "task",
-  "updated_at": "2026-03-31T16:11:42Z"
+  "updated_at": "2026-03-31T16:13:29Z"
 }
