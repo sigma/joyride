@@ -2,13 +2,14 @@
   "assignee": "unknown",
   "blocked_by": [],
   "blocks": [],
+  "closed_at": "2026-03-31T15:55:53Z",
   "created": "2026-03-31T15:52:08Z",
   "description": "If buttonA is pressed (MouseDown emitted) and then the profile switches to one where buttonA maps to None, the translator never sees the release for that action. button_state[Left] stays true, MouseUp never fires. Fix: on config change, emit MouseUp for all buttons in button_state that are no longer mapped. Tests: press A (MouseDown), switch config to buttonA→None (MouseUp emitted), verify button_state cleared.",
   "id": "jr-o0d",
   "labels": [],
   "priority": 0,
-  "status": "in_progress",
+  "status": "closed",
   "title": "Profile switch with held buttons leaves mouse stuck",
   "type": "bug",
-  "updated_at": "2026-03-31T15:54:18Z"
+  "updated_at": "2026-03-31T15:55:53Z"
 }
