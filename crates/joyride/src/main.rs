@@ -155,10 +155,12 @@ extern "C" fn poll_callback(ctx_ptr: *mut c_void) {
     }
 
     let state = ctx.gamepad.state.borrow();
+    let emitter_has_buttons = ctx.emitter.borrow().has_buttons_pressed();
     if state.left_stick == (0.0, 0.0)
         && state.right_stick == (0.0, 0.0)
         && state.dpad == (0.0, 0.0)
         && state.pressed_buttons.is_empty()
+        && !emitter_has_buttons
     {
         return;
     }

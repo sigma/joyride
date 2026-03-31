@@ -29,6 +29,11 @@ impl MouseEmitter {
         }
     }
 
+    /// Returns true if any mouse button is currently held down.
+    pub fn has_buttons_pressed(&self) -> bool {
+        self.button_state.values().any(|&pressed| pressed)
+    }
+
     pub fn move_cursor(&mut self, dx: f64, dy: f64) {
         if let Ok(event) = CGEvent::new(source()) {
             self.cursor_pos = event.location();
