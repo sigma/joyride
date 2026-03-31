@@ -58,7 +58,7 @@ in
       echo >&2 "installing ${appName}.app..."
 
       # Stop the running instance before replacing the binary
-      launchctl bootout gui/$(id -u ${cfg.user})/org.nixos.${appName} 2>/dev/null || true
+      launchctl bootout "gui/$(id -u ${cfg.user})/org.nixos.${appName}" 2>/dev/null || true
 
       mkdir -p "${appDir}/Contents/MacOS"
       mkdir -p "${appDir}/Contents/Resources"
@@ -72,7 +72,7 @@ in
       tccutil reset Accessibility dev.${appName} 2>/dev/null || true
 
       # Restart the service with the new binary
-      launchctl bootstrap gui/$(id -u ${cfg.user}) /Library/LaunchAgents/org.nixos.${appName}.plist 2>/dev/null || true
+      launchctl bootstrap "gui/$(id -u ${cfg.user})" /Library/LaunchAgents/org.nixos.${appName}.plist 2>/dev/null || true
     '';
 
     launchd.user.agents.joyride = {
