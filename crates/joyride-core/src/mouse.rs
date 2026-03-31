@@ -15,7 +15,12 @@ fn source() -> CGEventSource {
 
 pub struct MouseEmitter {
     cursor_pos: CGPoint,
+    /// Tracks mouse button press/release state for update_button edge detection.
     button_state: std::collections::HashMap<MouseButtonKind, bool>,
+    /// Separate edge detection for double_click — tracks whether the action
+    /// has already fired for the current gamepad press, to avoid re-firing
+    /// every poll frame.
+    double_click_fired: std::collections::HashSet<MouseButtonKind>,
 }
 
 impl MouseEmitter {
@@ -26,6 +31,7 @@ impl MouseEmitter {
         Self {
             cursor_pos: pos,
             button_state: std::collections::HashMap::new(),
+            double_click_fired: std::collections::HashSet::new(),
         }
     }
 
@@ -113,19 +119,17 @@ impl MouseEmitter {
         }
     }
 
-    /// Clear internal button state without emitting any event.
-    /// Used to reset edge detection for actions like double-click.
-    pub fn clear_button(&mut self, button: MouseButtonKind) {
-        self.button_state.insert(button, false);
+    /// Reset double-click edge detection so the next press fires again.
+    pub fn reset_double_click(&mut self, button: MouseButtonKind) {
+        self.double_click_fired.remove(&button);
     }
 
     pub fn double_click(&mut self, button: MouseButtonKind) {
-        // Only fire on the press edge — if already pressed, this is a repeat frame
-        let was_pressed = self.button_state.get(&button).copied().unwrap_or(false);
-        if was_pressed {
+        // Only fire once per gamepad press — subsequent poll frames are no-ops
+        if self.double_click_fired.contains(&button) {
             return;
         }
-        self.button_state.insert(button, true);
+        self.double_click_fired.insert(button);
 
         if let Ok(event) = CGEvent::new(source()) {
             self.cursor_pos = event.location();
@@ -382,22 +386,48 @@ mod tests {
     fn double_click_fires_once_per_press() {
         let mut emitter = MouseEmitter::new();
 
-        // First call: should set internal state to pressed
+        // First call: should mark as fired
         emitter.double_click(MouseButtonKind::Left);
-        assert!(emitter.has_buttons_pressed());
+        assert!(emitter.double_click_fired.contains(&MouseButtonKind::Left));
 
         // Second call (simulating next poll frame, button still held):
         // should be a no-op due to edge detection
         emitter.double_click(MouseButtonKind::Left);
-        // Still pressed (from first call)
-        assert!(emitter.has_buttons_pressed());
+        assert!(emitter.double_click_fired.contains(&MouseButtonKind::Left));
 
         // Release resets for next press
-        emitter.clear_button(MouseButtonKind::Left);
-        assert!(!emitter.has_buttons_pressed());
+        emitter.reset_double_click(MouseButtonKind::Left);
+        assert!(!emitter.double_click_fired.contains(&MouseButtonKind::Left));
 
         // Can fire again after release
         emitter.double_click(MouseButtonKind::Left);
+        assert!(emitter.double_click_fired.contains(&MouseButtonKind::Left));
+    }
+
+    /// Regression: double_click edge detection must not interfere with
+    /// update_button state. They use separate tracking so a DoubleLeftClick
+    /// mapping on one button doesn't corrupt LeftClick state on another.
+    #[test]
+    fn double_click_does_not_interfere_with_button_state() {
+        let mut emitter = MouseEmitter::new();
+
+        // Single click: press left
+        emitter.update_button(MouseButtonKind::Left, true);
         assert!(emitter.has_buttons_pressed());
+
+        // Double click fires on a different gamepad button but same mouse button
+        // This should NOT affect the button_state used by update_button
+        emitter.double_click(MouseButtonKind::Left);
+
+        // Reset double-click (gamepad button for double-click released)
+        emitter.reset_double_click(MouseButtonKind::Left);
+
+        // button_state should still show Left as pressed (from update_button)
+        assert_eq!(emitter.button_state.get(&MouseButtonKind::Left), Some(&true));
+        assert!(emitter.has_buttons_pressed());
+
+        // Single click release should still work
+        emitter.update_button(MouseButtonKind::Left, false);
+        assert!(!emitter.has_buttons_pressed());
     }
 }
