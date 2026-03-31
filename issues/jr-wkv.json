@@ -1,0 +1,14 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-03-31T15:52:09Z",
+  "description": "D-pad discrete threshold is a flat 0.5. Stick oscillating at 0.49/0.51 produces rapid press/release flicker. Fix: activate at 0.6, deactivate at 0.4 (configurable). Tests: value goes 0.55→0.45→0.55 with hysteresis should NOT toggle. Value goes 0.65→0.35→0.65 SHOULD toggle.",
+  "id": "jr-wkv",
+  "labels": [],
+  "priority": 1,
+  "status": "open",
+  "title": "D-pad threshold lacks hysteresis",
+  "type": "bug",
+  "updated_at": "2026-03-31T15:52:09Z"
+}
