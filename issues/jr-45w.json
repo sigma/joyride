@@ -1,0 +1,14 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-03-31T16:54:11Z",
+  "description": "action_mouse_button() in translator.rs uses catch-all _ =\u003e None. New Action variants that hold mouse buttons would be silently treated as unmapped, causing incorrect button release on profile switch. Fix: remove catch-all, make match exhaustive.",
+  "id": "jr-45w",
+  "labels": [],
+  "priority": 1,
+  "status": "open",
+  "title": "Make action_mouse_button exhaustive via #[non_exhaustive] or match",
+  "type": "task",
+  "updated_at": "2026-03-31T16:54:11Z"
+}
