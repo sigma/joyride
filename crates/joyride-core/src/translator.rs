@@ -52,6 +52,49 @@ impl InputTranslator {
         self.button_press_count.values().any(|&count| count > 0)
     }
 
+    /// Release any buttons whose source is no longer present in the config's button_map,
+    /// or whose mapping has changed. Call this when the active profile changes.
+    pub fn flush_stale_buttons(
+        &mut self,
+        config: &TranslatorConfig,
+    ) -> Vec<OutputEvent> {
+        let mut events = Vec::new();
+
+        // Find source buttons that are pressed but no longer mapped to the same action
+        let stale_sources: Vec<(String, MouseButtonKind)> = self
+            .button_source_state
+            .iter()
+            .filter(|(_, (_, pressed))| *pressed)
+            .filter(|(source, (button, _))| {
+                // Source is stale if not in config or mapped to a different MouseButtonKind
+                match config.button_map.get(source.as_str()) {
+                    Some(Action::LeftClick) => *button != MouseButtonKind::Left,
+                    Some(Action::RightClick) => *button != MouseButtonKind::Right,
+                    Some(Action::MiddleClick) => *button != MouseButtonKind::Middle,
+                    Some(Action::BackClick) => *button != MouseButtonKind::Back,
+                    Some(Action::ForwardClick) => *button != MouseButtonKind::Forward,
+                    _ => true, // Not mapped to a click action anymore
+                }
+            })
+            .map(|(source, (button, _))| (source.clone(), *button))
+            .collect();
+
+        for (source, button) in stale_sources {
+            self.button_source_state.insert(source, (button, false));
+            let count = self.button_press_count.entry(button).or_insert(0);
+            *count = count.saturating_sub(1);
+            if *count == 0 {
+                events.push(OutputEvent::immediate(OutputEventKind::MouseUp(button)));
+            }
+        }
+
+        // Also clear stale double-click and key-press state
+        self.double_click_fired.clear();
+        self.key_press_fired.clear();
+
+        events
+    }
+
     /// Translate gamepad state + config into output events.
     pub fn translate(
         &mut self,
@@ -566,6 +609,58 @@ mod tests {
         // Release A → MouseUp
         let events = t.translate(&GamepadState::default(), &config, 0.0);
         assert_eq!(event_kinds(&events), vec![&OutputEventKind::MouseUp(MouseButtonKind::Left)]);
+    }
+
+    // -- Profile switch with held buttons --
+
+    #[test]
+    fn profile_switch_releases_orphaned_buttons() {
+        let mut t = InputTranslator::new();
+        let config1 = config_with_map(vec![("buttonA", Action::LeftClick)]);
+        let config2 = config_with_map(vec![("buttonA", Action::None)]);
+
+        // Press A → MouseDown
+        let events = t.translate(&state_with_buttons(&["buttonA"]), &config1, 0.0);
+        assert_eq!(event_kinds(&events), vec![&OutputEventKind::MouseDown(MouseButtonKind::Left)]);
+        assert!(t.has_buttons_pressed());
+
+        // Switch profile: buttonA now maps to None → flush emits MouseUp
+        let flush = t.flush_stale_buttons(&config2);
+        assert_eq!(event_kinds(&flush), vec![&OutputEventKind::MouseUp(MouseButtonKind::Left)]);
+        assert!(!t.has_buttons_pressed());
+    }
+
+    #[test]
+    fn profile_switch_remapped_button_releases_old() {
+        let mut t = InputTranslator::new();
+        let config1 = config_with_map(vec![("buttonA", Action::LeftClick)]);
+        let config2 = config_with_map(vec![("buttonA", Action::RightClick)]);
+
+        // Press A → MouseDown(Left)
+        t.translate(&state_with_buttons(&["buttonA"]), &config1, 0.0);
+        assert!(t.has_buttons_pressed());
+
+        // Switch profile: buttonA now maps to RightClick → flush releases Left
+        let flush = t.flush_stale_buttons(&config2);
+        assert_eq!(event_kinds(&flush), vec![&OutputEventKind::MouseUp(MouseButtonKind::Left)]);
+
+        // Next translate with new config should press Right
+        let events = t.translate(&state_with_buttons(&["buttonA"]), &config2, 0.0);
+        assert!(events.iter().any(|e| e.kind == OutputEventKind::MouseDown(MouseButtonKind::Right)));
+    }
+
+    #[test]
+    fn profile_switch_no_flush_when_mapping_unchanged() {
+        let mut t = InputTranslator::new();
+        let config = config_with_map(vec![("buttonA", Action::LeftClick)]);
+
+        // Press A → MouseDown
+        t.translate(&state_with_buttons(&["buttonA"]), &config, 0.0);
+
+        // "Switch" to same config → no flush events
+        let flush = t.flush_stale_buttons(&config);
+        assert!(flush.is_empty());
+        assert!(t.has_buttons_pressed());
     }
 
     #[test]

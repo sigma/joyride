@@ -200,14 +200,20 @@ extern "C" fn poll_callback(ctx_ptr: *mut c_void) {
         if *cached_idx != current_idx || *cached_gen != current_gen || ctx.cached_config.borrow().is_none() {
             *cached_idx = current_idx;
             *cached_gen = current_gen;
-            *ctx.cached_config.borrow_mut() = Some(TranslatorConfig {
+            let new_config = TranslatorConfig {
                 cursor_speed: settings.cursor_speed(),
                 dpad_speed: settings.dpad_speed(),
                 scroll_speed: settings.scroll_speed(),
                 deadzone: settings.deadzone() as f32,
                 natural_scroll: settings.natural_scroll(),
                 button_map: settings.button_map().clone(),
-            });
+            };
+            // Flush buttons that are no longer mapped in the new config
+            let flush_events = ctx.translator.borrow_mut().flush_stale_buttons(&new_config);
+            if !flush_events.is_empty() {
+                ctx.emitter.borrow_mut().emit(&flush_events);
+            }
+            *ctx.cached_config.borrow_mut() = Some(new_config);
         }
     }
 
