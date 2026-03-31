@@ -1,0 +1,15 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-03-31T09:35:14Z",
+  "description": "Root Cargo.toml, crates/ dirs, empty sub-crate manifests",
+  "id": "jr-cx1.2",
+  "labels": [],
+  "parent": "jr-cx1",
+  "priority": 2,
+  "status": "open",
+  "title": "Create workspace skeleton",
+  "type": "task",
+  "updated_at": "2026-03-31T09:35:14Z"
+}
