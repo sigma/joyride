@@ -1,5 +1,5 @@
 {
-  "assignee": "",
+  "assignee": "unknown",
   "blocked_by": [
     "jr-b6m"
   ],
@@ -17,8 +17,8 @@
     }
   ],
   "priority": 2,
-  "status": "open",
+  "status": "in_progress",
   "title": "Add duration tracking to translator for hold-based actions",
   "type": "task",
-  "updated_at": "2026-03-31T16:16:07Z"
+  "updated_at": "2026-03-31T16:16:13Z"
 }
