@@ -2,13 +2,14 @@
   "assignee": "",
   "blocked_by": [],
   "blocks": [],
+  "closed_at": "2026-03-31T14:16:32Z",
   "created": "2026-03-31T09:35:07Z",
   "description": "Split joyride into 4 workspace crates (joyride-config, joyride-core, joyride-ui, joyride binary) and add comprehensive tests. See plan for details.\n\n```mermaid\ngraph LR\n    1[Add tests to single-crate] --\u003e 2[Create workspace skeleton]\n    2 --\u003e 3[Move config crate]\n    3 --\u003e 4[Move core crate]\n    4 --\u003e 5[Move UI crate]\n    5 --\u003e 6[Clean up binary]\n    6 --\u003e 7[Update Nix]\n    7 --\u003e 8[Add remaining tests]\n```",
   "id": "jr-cx1",
   "labels": [],
   "priority": 2,
-  "status": "open",
+  "status": "closed",
   "title": "Workspace split + comprehensive tests",
   "type": "epic",
-  "updated_at": "2026-03-31T09:35:07Z"
+  "updated_at": "2026-03-31T14:16:32Z"
 }
