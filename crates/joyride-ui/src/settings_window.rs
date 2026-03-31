@@ -228,14 +228,14 @@ impl SettingsWindow {
         {
             let profile_popup = NSPopUpButton::initWithFrame_pullsDown(mtm.alloc(), NSRect::ZERO, false);
             for (i, p) in s.profiles.iter().enumerate() {
-                let label = if i == s.active_profile {
+                let label = if i == s.active_profile_index() {
                     format!("{} ●", p.name)
                 } else {
                     p.name.clone()
                 };
                 profile_popup.addItemWithTitle(&NSString::from_str(&label));
             }
-            profile_popup.selectItemAtIndex(s.active_profile as isize);
+            profile_popup.selectItemAtIndex(s.active_profile_index() as isize);
 
             // Profile selector target
             let profile_target = mtm.alloc::<MappingTarget>().set_ivars(MappingIvars {

@@ -158,7 +158,7 @@ extern "C" fn poll_callback(ctx_ptr: *mut c_void) {
             let mut settings = ctx.settings.borrow_mut();
             settings.profile_locked = !settings.profile_locked;
             if settings.profile_locked {
-                settings.active_profile = 0;
+                settings.set_active_profile(0);
                 info!("profile locked to Default");
             } else {
                 info!("profile auto-switching re-enabled");
@@ -177,10 +177,10 @@ extern "C" fn poll_callback(ctx_ptr: *mut c_void) {
         }
         if !settings.profile_locked {
             let target = settings.profile_for_bundle_id(&bundle_id).unwrap_or(0);
-            if settings.active_profile != target {
+            if settings.active_profile_index() != target {
                 let name = settings.profiles[target].name.clone();
                 info!("switched to profile '{name}'");
-                settings.active_profile = target;
+                settings.set_active_profile(target);
             }
         }
     }
@@ -202,7 +202,7 @@ extern "C" fn poll_callback(ctx_ptr: *mut c_void) {
     // Rebuild config snapshot only when the active profile changes
     {
         let settings = ctx.settings.borrow();
-        let current_idx = settings.active_profile;
+        let current_idx = settings.active_profile_index();
         let current_gen = settings.generation;
         let mut cached_idx = ctx.cached_profile_idx.borrow_mut();
         let mut cached_gen = ctx.cached_generation.borrow_mut();

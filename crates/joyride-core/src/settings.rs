@@ -11,7 +11,7 @@ use joyride_config::{Action, Config, InputId, Profile};
 pub struct Settings {
     cli_defaults: Config,
     pub profiles: Vec<Profile>,
-    pub active_profile: usize,
+    active_profile: usize,
     /// When true, auto-switching is disabled and the default profile is forced.
     pub profile_locked: bool,
     pub debug: bool,
@@ -48,6 +48,17 @@ impl Settings {
         };
 
         Rc::new(RefCell::new(settings))
+    }
+
+    pub fn active_profile_index(&self) -> usize {
+        self.active_profile
+    }
+
+    /// Set the active profile index. Clamps to valid range.
+    pub fn set_active_profile(&mut self, index: usize) {
+        if !self.profiles.is_empty() {
+            self.active_profile = index.min(self.profiles.len() - 1);
+        }
     }
 
     pub fn active(&self) -> &Profile {
