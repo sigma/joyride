@@ -6,14 +6,15 @@
   "blocks": [
     "jr-m17.3"
   ],
+  "closed_at": "2026-03-31T14:13:29Z",
   "created": "2026-03-31T14:09:41Z",
   "description": "New translator.rs in joyride-core. TranslatorConfig, InputTranslator::translate(). Comprehensive tests for all edge cases including the three regressions.",
   "id": "jr-m17.2",
   "labels": [],
   "parent": "jr-m17",
   "priority": 2,
-  "status": "in_progress",
+  "status": "closed",
   "title": "Add InputTranslator with tests",
   "type": "task",
-  "updated_at": "2026-03-31T14:11:35Z"
+  "updated_at": "2026-03-31T14:13:29Z"
 }
