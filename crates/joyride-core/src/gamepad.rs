@@ -63,8 +63,8 @@ impl GamepadManager {
         }
 
         let controllers = unsafe { GCController::controllers() };
-        if controllers.len() > 0 {
-            self.attach_controller(&*controllers.objectAtIndex(0));
+        if !controllers.is_empty() {
+            self.attach_controller(&controllers.objectAtIndex(0));
         }
     }
 

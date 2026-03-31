@@ -27,6 +27,12 @@ pub struct MouseEmitter {
     last_click_count: HashMap<MouseButtonKind, i64>,
 }
 
+impl Default for MouseEmitter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MouseEmitter {
     pub fn new() -> Self {
         let pos = CGEvent::new(source())

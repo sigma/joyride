@@ -107,9 +107,9 @@ fn main() {
     let ctx_ptr = Box::into_raw(ctx) as *mut c_void;
 
     unsafe {
-        let queue = &_dispatch_main_q as *const _ as *const c_void;
+        let queue = &_dispatch_main_q as *const c_void;
         let timer = dispatch_source_create(
-            &_dispatch_source_type_timer as *const _ as *const c_void,
+            &_dispatch_source_type_timer as *const c_void,
             0,
             0,
             queue,

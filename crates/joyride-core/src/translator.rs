@@ -27,6 +27,12 @@ pub struct InputTranslator {
 /// Delay in ms between clicks in a double-click sequence.
 const DOUBLE_CLICK_DELAY_MS: u32 = 50;
 
+impl Default for InputTranslator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl InputTranslator {
     pub fn new() -> Self {
         Self {

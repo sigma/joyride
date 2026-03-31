@@ -481,8 +481,8 @@ pub fn format_value(value: f64, fmt: &str) -> String {
     match fmt {
         "int" => format!("{}", value as i64),
         "hz" => format!("{} Hz", value as i64),
-        "f2" => format!("{:.2}", value),
-        _ => format!("{}", value),
+        "f2" => format!("{value:.2}"),
+        _ => format!("{value}"),
     }
 }
 

@@ -13,6 +13,12 @@ pub struct AppWatcher {
     _observer: RefCell<Option<Retained<objc2::runtime::ProtocolObject<dyn NSObjectProtocol>>>>,
 }
 
+impl Default for AppWatcher {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AppWatcher {
     pub fn new() -> Self {
         Self {

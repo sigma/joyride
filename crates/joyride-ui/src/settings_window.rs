@@ -179,6 +179,12 @@ pub struct SettingsWindow {
     _retained: Vec<Retained<NSObject>>,
 }
 
+impl Default for SettingsWindow {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SettingsWindow {
     pub fn new() -> Self {
         Self {
@@ -414,6 +420,7 @@ fn add_spacer(stack: &NSStackView, height: f64) {
     stack.addArrangedSubview(&spacer);
 }
 
+#[allow(clippy::too_many_arguments)]
 fn add_slider(
     stack: &NSStackView, title: &str, settings: &Rc<RefCell<Settings>>,
     field: &'static str, value: f64, min: f64, max: f64, format: &'static str,
