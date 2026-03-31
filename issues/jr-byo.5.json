@@ -3,7 +3,9 @@
   "blocked_by": [
     "jr-byo.4"
   ],
-  "blocks": [],
+  "blocks": [
+    "jr-byo.6"
+  ],
   "created": "2026-03-31T15:24:47Z",
   "description": "Zero /// doc comments exist. Add to InputTranslator, EventEmitter, OutputEvent, Profile, Action, Config, Settings, MouseEmitter, GamepadState.",
   "id": "jr-byo.5",

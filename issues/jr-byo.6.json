@@ -1,6 +1,8 @@
 {
   "assignee": "",
-  "blocked_by": [],
+  "blocked_by": [
+    "jr-byo.5"
+  ],
   "blocks": [],
   "created": "2026-03-31T15:24:47Z",
   "description": "Remove dead ALL_BUTTONS, impl Error for ParseOutcome, Vec::with_capacity in translator, document intentional Box leak, remove unused CGEventSource expect.",
@@ -11,5 +13,5 @@
   "status": "open",
   "title": "Miscellaneous cleanup",
   "type": "task",
-  "updated_at": "2026-03-31T15:24:47Z"
+  "updated_at": "2026-03-31T15:24:54Z"
 }
