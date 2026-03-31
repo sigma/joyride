@@ -68,7 +68,7 @@ fn main() {
 
     eprintln!(
         "joyride: running (poll={}Hz, cursor={}, scroll={})",
-        s.poll_hz as u32, s.cursor_speed, s.scroll_speed
+        s.poll_hz() as u32, s.cursor_speed(), s.scroll_speed()
     );
     if !s.excluded_bundle_ids.is_empty() {
         eprintln!(
@@ -77,7 +77,7 @@ fn main() {
         );
     }
 
-    let interval_ns = (NSEC_PER_SEC as f64 / s.poll_hz) as u64;
+    let interval_ns = (NSEC_PER_SEC as f64 / s.poll_hz()) as u64;
     drop(s);
 
     let ctx = Box::new(PollContext {
@@ -136,7 +136,8 @@ extern "C" fn poll_callback(ctx_ptr: *mut c_void) {
     *last = now;
     drop(last);
 
-    let dz = settings.deadzone as f32;
+    let dz = settings.deadzone() as f32;
+    let bmap = settings.button_map();
     let state = ctx.gamepad.state.borrow();
     let mut emitter = ctx.emitter.borrow_mut();
 
@@ -145,22 +146,22 @@ extern "C" fn poll_callback(ctx_ptr: *mut c_void) {
     if lx.abs() > dz || ly.abs() > dz {
         let x = apply_deadzone(lx, dz);
         let y = apply_deadzone(ly, dz);
-        let dx = x as f64 * settings.cursor_speed * dt;
-        let dy = -y as f64 * settings.cursor_speed * dt;
+        let dx = x as f64 * settings.cursor_speed() * dt;
+        let dy = -y as f64 * settings.cursor_speed() * dt;
         emitter.move_cursor(dx, dy);
     }
 
     // D-pad: slow, precise cursor movement (only for unmapped directions)
     let (dpx, dpy) = state.dpad;
-    let dpad_x_mapped = !matches!(settings.button_map.get("dpadLeft"), Some(Action::None) | None)
-        || !matches!(settings.button_map.get("dpadRight"), Some(Action::None) | None);
-    let dpad_y_mapped = !matches!(settings.button_map.get("dpadUp"), Some(Action::None) | None)
-        || !matches!(settings.button_map.get("dpadDown"), Some(Action::None) | None);
+    let dpad_x_mapped = !matches!(bmap.get("dpadLeft"), Some(Action::None) | None)
+        || !matches!(bmap.get("dpadRight"), Some(Action::None) | None);
+    let dpad_y_mapped = !matches!(bmap.get("dpadUp"), Some(Action::None) | None)
+        || !matches!(bmap.get("dpadDown"), Some(Action::None) | None);
     let use_dpx = if dpad_x_mapped { 0.0 } else { dpx };
     let use_dpy = if dpad_y_mapped { 0.0 } else { dpy };
     if use_dpx.abs() > 0.1 || use_dpy.abs() > 0.1 {
-        let dx = use_dpx as f64 * settings.dpad_speed * dt;
-        let dy = -use_dpy as f64 * settings.dpad_speed * dt;
+        let dx = use_dpx as f64 * settings.dpad_speed() * dt;
+        let dy = -use_dpy as f64 * settings.dpad_speed() * dt;
         emitter.move_cursor(dx, dy);
     }
 
@@ -169,14 +170,14 @@ extern "C" fn poll_callback(ctx_ptr: *mut c_void) {
     if rx.abs() > dz || ry.abs() > dz {
         let x = apply_deadzone(rx, dz);
         let y = apply_deadzone(ry, dz);
-        let scroll_dir: f64 = if settings.natural_scroll { -1.0 } else { 1.0 };
-        let sdx = x as f64 * settings.scroll_speed;
-        let sdy = y as f64 * settings.scroll_speed * scroll_dir;
+        let scroll_dir: f64 = if settings.natural_scroll() { -1.0 } else { 1.0 };
+        let sdx = x as f64 * settings.scroll_speed();
+        let sdy = y as f64 * settings.scroll_speed() * scroll_dir;
         emitter.scroll(sdx, sdy);
     }
 
     // Buttons: dispatch based on mapping
-    for (button_name, action) in &settings.button_map {
+    for (button_name, action) in bmap {
         let pressed = state.pressed_buttons.contains(button_name.as_str());
         match action {
             Action::None => {}

@@ -60,13 +60,16 @@ define_class!(
             let value = sender.doubleValue();
             let iv = self.ivars();
             let mut s = iv.settings.borrow_mut();
-            match iv.field {
-                "cursorSpeed" => s.cursor_speed = value,
-                "dpadSpeed" => s.dpad_speed = value,
-                "scrollSpeed" => s.scroll_speed = value,
-                "deadzone" => s.deadzone = value,
-                "pollHz" => s.poll_hz = value,
-                _ => {}
+            {
+                let p = s.active_mut();
+                match iv.field {
+                    "cursorSpeed" => p.cursor_speed = value,
+                    "dpadSpeed" => p.dpad_speed = value,
+                    "scrollSpeed" => p.scroll_speed = value,
+                    "deadzone" => p.deadzone = value,
+                    "pollHz" => p.poll_hz = value,
+                    _ => {}
+                }
             }
             s.save();
             if let Some(label) = iv.label.borrow().as_ref() {
@@ -94,7 +97,7 @@ define_class!(
             let iv = self.ivars();
             let mut s = iv.settings.borrow_mut();
             match iv.field {
-                "naturalScroll" => s.natural_scroll = on,
+                "naturalScroll" => s.active_mut().natural_scroll = on,
                 "debugLogging" => s.debug = on,
                 _ => {}
             }
@@ -122,7 +125,7 @@ define_class!(
             if idx >= 0 && (idx as usize) < ALL_ACTIONS.len() {
                 let action = Action::from_id(ALL_ACTIONS[idx as usize].0);
                 let mut s = iv.settings.borrow_mut();
-                s.button_map.insert(iv.button_name.clone(), action);
+                s.active_mut().button_map.insert(iv.button_name.clone(), action);
                 s.save();
             }
         }
@@ -216,28 +219,29 @@ impl SettingsWindow {
             top: 20.0, left: 20.0, bottom: 20.0, right: 20.0,
         });
 
+        let p = s.active();
         // -- Cursor Control --
         add_header(&stack, "Cursor Control", mtm);
-        let (t, ts) = add_slider(&stack, "Left Stick Speed", settings, "cursorSpeed", s.cursor_speed, 100.0, 5000.0, "int", mtm);
+        let (t, ts) = add_slider(&stack, "Left Stick Speed", settings, "cursorSpeed", p.cursor_speed, 100.0, 5000.0, "int", mtm);
         retained.push(t); sliders.push(ts);
-        let (t, ts) = add_slider(&stack, "D-pad Speed", settings, "dpadSpeed", s.dpad_speed, 10.0, 500.0, "int", mtm);
+        let (t, ts) = add_slider(&stack, "D-pad Speed", settings, "dpadSpeed", p.dpad_speed, 10.0, 500.0, "int", mtm);
         retained.push(t); sliders.push(ts);
-        let (t, ts) = add_slider(&stack, "Deadzone", settings, "deadzone", s.deadzone, 0.0, 0.5, "f2", mtm);
+        let (t, ts) = add_slider(&stack, "Deadzone", settings, "deadzone", p.deadzone, 0.0, 0.5, "f2", mtm);
         retained.push(t); sliders.push(ts);
 
         // -- Scrolling --
         add_spacer(&stack, 8.0);
         add_header(&stack, "Scrolling", mtm);
-        let (t, ts) = add_slider(&stack, "Scroll Speed", settings, "scrollSpeed", s.scroll_speed, 1.0, 30.0, "int", mtm);
+        let (t, ts) = add_slider(&stack, "Scroll Speed", settings, "scrollSpeed", p.scroll_speed, 1.0, 30.0, "int", mtm);
         retained.push(t); sliders.push(ts);
-        let (t, tt) = add_toggle(&stack, "Natural Scrolling", settings, "naturalScroll", s.natural_scroll, mtm);
+        let (t, tt) = add_toggle(&stack, "Natural Scrolling", settings, "naturalScroll", p.natural_scroll, mtm);
         retained.push(t); toggles.push(tt);
 
         // -- Button Mapping --
         add_spacer(&stack, 8.0);
         add_header(&stack, "Button Mapping", mtm);
         for (btn_id, btn_display) in ALL_INPUTS {
-            let current = s.button_map.get(*btn_id).map(|a| a.to_id()).unwrap_or("none");
+            let current = p.button_map.get(*btn_id).map(|a| a.to_id()).unwrap_or("none");
             let (t, tm) = add_mapping(&stack, btn_display, settings, btn_id, current, mtm);
             retained.push(t); mappings.push(tm);
         }
@@ -245,7 +249,7 @@ impl SettingsWindow {
         // -- Advanced --
         add_spacer(&stack, 8.0);
         add_header(&stack, "Advanced", mtm);
-        let (t, ts) = add_slider(&stack, "Poll Rate", settings, "pollHz", s.poll_hz, 30.0, 240.0, "hz", mtm);
+        let (t, ts) = add_slider(&stack, "Poll Rate", settings, "pollHz", p.poll_hz, 30.0, 240.0, "hz", mtm);
         retained.push(t); sliders.push(ts);
         let (t, tt) = add_toggle(&stack, "Debug Logging", settings, "debugLogging", s.debug, mtm);
         retained.push(t); toggles.push(tt);
@@ -271,13 +275,14 @@ impl SettingsWindow {
         let settings_for_refresh = Rc::clone(settings);
         *reset_target.ivars().refresh.borrow_mut() = Some(Box::new(move || {
             let s = settings_for_refresh.borrow();
+            let p = s.active();
             for ts in &sliders {
                 let value = match ts.field {
-                    "cursorSpeed" => s.cursor_speed,
-                    "dpadSpeed" => s.dpad_speed,
-                    "scrollSpeed" => s.scroll_speed,
-                    "deadzone" => s.deadzone,
-                    "pollHz" => s.poll_hz,
+                    "cursorSpeed" => p.cursor_speed,
+                    "dpadSpeed" => p.dpad_speed,
+                    "scrollSpeed" => p.scroll_speed,
+                    "deadzone" => p.deadzone,
+                    "pollHz" => p.poll_hz,
                     _ => 0.0,
                 };
                 ts.slider.setDoubleValue(value);
@@ -285,14 +290,14 @@ impl SettingsWindow {
             }
             for tt in &toggles {
                 let on = match tt.field {
-                    "naturalScroll" => s.natural_scroll,
+                    "naturalScroll" => p.natural_scroll,
                     "debugLogging" => s.debug,
                     _ => false,
                 };
                 tt.switch.setState(if on { 1 } else { 0 });
             }
             for tm in &mappings {
-                let action = s.button_map.get(&tm.button_id).map(|a| a.to_id()).unwrap_or("none");
+                let action = p.button_map.get(&tm.button_id).map(|a| a.to_id()).unwrap_or("none");
                 let idx = ALL_ACTIONS.iter()
                     .position(|(id, _)| *id == action)
                     .unwrap_or(0);

@@ -255,6 +255,45 @@ pub enum ParseOutcome {
     Error(String),
 }
 
+/// A named configuration profile containing all tunable parameters.
+#[derive(Debug, Clone)]
+pub struct Profile {
+    pub name: String,
+    /// Bundle IDs that activate this profile when frontmost.
+    pub bundle_ids: Vec<String>,
+    pub cursor_speed: f64,
+    pub dpad_speed: f64,
+    pub scroll_speed: f64,
+    pub deadzone: f64,
+    pub poll_hz: f64,
+    pub natural_scroll: bool,
+    /// Maps input name → action (e.g. "buttonA" → Action::LeftClick)
+    pub button_map: HashMap<String, Action>,
+}
+
+impl Profile {
+    /// Create the default profile from CLI config.
+    pub fn from_config(config: &Config) -> Self {
+        let mut button_map = HashMap::new();
+        let cli_map = config.cli_button_map();
+        for (input, _) in ALL_INPUTS {
+            let action = cli_map.get(*input).cloned().unwrap_or(Action::None);
+            button_map.insert(input.to_string(), action);
+        }
+        Self {
+            name: "Default".to_string(),
+            bundle_ids: Vec::new(),
+            cursor_speed: config.cursor_speed,
+            dpad_speed: config.dpad_speed,
+            scroll_speed: config.scroll_speed,
+            deadzone: config.deadzone as f64,
+            poll_hz: config.poll_hz,
+            natural_scroll: config.natural_scroll,
+            button_map,
+        }
+    }
+}
+
 pub fn apply_deadzone(value: f32, dz: f32) -> f32 {
     if value.abs() <= dz {
         return 0.0;
