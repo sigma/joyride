@@ -1,5 +1,5 @@
 {
-  "assignee": "",
+  "assignee": "unknown",
   "blocked_by": [],
   "blocks": [],
   "created": "2026-03-31T10:00:57Z",
@@ -7,8 +7,8 @@
   "id": "jr-n19",
   "labels": [],
   "priority": 1,
-  "status": "open",
+  "status": "in_progress",
   "title": "Spurious accessibility prompt when reopening settings",
   "type": "bug",
-  "updated_at": "2026-03-31T10:00:57Z"
+  "updated_at": "2026-03-31T10:04:13Z"
 }
