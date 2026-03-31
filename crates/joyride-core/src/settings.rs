@@ -18,6 +18,8 @@ pub struct Settings {
     pub excluded_bundle_ids: Vec<String>,
     /// Incremented on save/reset to signal cache invalidation.
     pub generation: u64,
+    /// Cached mapping from bundle ID → profile index. Rebuilt on generation change.
+    bundle_id_cache: HashMap<String, usize>,
 }
 
 impl Settings {
@@ -33,6 +35,7 @@ impl Settings {
             profiles.push(default);
         }
 
+        let bundle_id_cache = build_bundle_id_cache(&profiles);
         let settings = Self {
             excluded_bundle_ids: cli.excluded_bundle_ids.clone(),
             profiles,
@@ -41,6 +44,7 @@ impl Settings {
             debug,
             cli_defaults: cli,
             generation: 0,
+            bundle_id_cache,
         };
 
         Rc::new(RefCell::new(settings))
@@ -66,13 +70,19 @@ impl Settings {
         1.0 / self.poll_hz()
     }
 
-    /// Find the profile index matching a bundle ID, if any.
+    /// Rebuild internal caches after directly modifying profiles.
+    pub fn rebuild_caches(&mut self) {
+        self.bundle_id_cache = build_bundle_id_cache(&self.profiles);
+    }
+
+    /// Find the profile index matching a bundle ID, if any. O(1) via cache.
     pub fn profile_for_bundle_id(&self, bundle_id: &str) -> Option<usize> {
-        self.profiles.iter().position(|p| p.bundle_ids.contains(&bundle_id.to_string()))
+        self.bundle_id_cache.get(bundle_id).copied()
     }
 
     pub fn save(&mut self) {
         self.generation += 1;
+        self.bundle_id_cache = build_bundle_id_cache(&self.profiles);
         let ud = NSUserDefaults::standardUserDefaults();
         ud.setBool_forKey(self.debug, &NSString::from_str("debugLogging"));
         save_profiles(&ud, &self.profiles);
@@ -102,6 +112,16 @@ impl Settings {
 
         self.save();
     }
+}
+
+fn build_bundle_id_cache(profiles: &[Profile]) -> HashMap<String, usize> {
+    let mut cache = HashMap::new();
+    for (idx, profile) in profiles.iter().enumerate() {
+        for bid in &profile.bundle_ids {
+            cache.insert(bid.clone(), idx);
+        }
+    }
+    cache
 }
 
 // -- Profile persistence --
@@ -352,6 +372,7 @@ mod tests {
             gaming.name = "Gaming".to_string();
             gaming.bundle_ids = vec!["com.example.game".to_string()];
             s.profiles.push(gaming);
+            s.rebuild_caches();
         }
         let s = settings.borrow();
         assert_eq!(s.profile_for_bundle_id("com.example.game"), Some(1));
