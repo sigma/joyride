@@ -1,0 +1,14 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-03-31T10:00:30Z",
+  "description": "Expand the set of actions that can be mapped to gamepad buttons and d-pad, including multi-event actions and key combos.\n\n```mermaid\ngraph LR\n    1[Action system refactor] --\u003e 2[Double-click action]\n    1 --\u003e 3[Key combo actions]\n    1 --\u003e 4[D-pad button mapping]\n```",
+  "id": "jr-veu",
+  "labels": [],
+  "priority": 1,
+  "status": "open",
+  "title": "Extended action mapping",
+  "type": "epic",
+  "updated_at": "2026-03-31T10:00:30Z"
+}
