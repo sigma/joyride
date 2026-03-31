@@ -7,7 +7,7 @@ use objc2::{define_class, msg_send, sel, DeclaredClass, MainThreadOnly};
 use objc2_app_kit::*;
 use objc2_foundation::*;
 
-use joyride_config::{format_value, ALL_ACTIONS, ALL_BUTTONS};
+use joyride_config::{format_value, Action, ALL_ACTIONS, ALL_BUTTONS};
 use joyride_core::settings::Settings;
 
 // MARK: - Window delegate
@@ -120,9 +120,9 @@ define_class!(
             let iv = self.ivars();
             let idx = sender.indexOfSelectedItem();
             if idx >= 0 && (idx as usize) < ALL_ACTIONS.len() {
-                let action = ALL_ACTIONS[idx as usize].0;
+                let action = Action::from_id(ALL_ACTIONS[idx as usize].0);
                 let mut s = iv.settings.borrow_mut();
-                s.button_map.insert(iv.button_name.clone(), action.to_string());
+                s.button_map.insert(iv.button_name.clone(), action);
                 s.save();
             }
         }
@@ -237,7 +237,7 @@ impl SettingsWindow {
         add_spacer(&stack, 8.0);
         add_header(&stack, "Button Mapping", mtm);
         for (btn_id, btn_display) in ALL_BUTTONS {
-            let current = s.button_map.get(*btn_id).map(|s| s.as_str()).unwrap_or("none");
+            let current = s.button_map.get(*btn_id).map(|a| a.to_id()).unwrap_or("none");
             let (t, tm) = add_mapping(&stack, btn_display, settings, btn_id, current, mtm);
             retained.push(t); mappings.push(tm);
         }
@@ -292,7 +292,7 @@ impl SettingsWindow {
                 tt.switch.setState(if on { 1 } else { 0 });
             }
             for tm in &mappings {
-                let action = s.button_map.get(&tm.button_id).map(|s| s.as_str()).unwrap_or("none");
+                let action = s.button_map.get(&tm.button_id).map(|a| a.to_id()).unwrap_or("none");
                 let idx = ALL_ACTIONS.iter()
                     .position(|(id, _)| *id == action)
                     .unwrap_or(0);

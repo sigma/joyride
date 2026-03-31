@@ -105,6 +105,52 @@ impl MouseEmitter {
         }
     }
 
+    pub fn double_click(&mut self, button: MouseButtonKind) {
+        if let Ok(event) = CGEvent::new(source()) {
+            self.cursor_pos = event.location();
+        }
+
+        let (down_type, up_type, cg_button, button_number) = match button {
+            MouseButtonKind::Left => (
+                CGEventType::LeftMouseDown, CGEventType::LeftMouseUp,
+                CGMouseButton::Left, None,
+            ),
+            MouseButtonKind::Right => (
+                CGEventType::RightMouseDown, CGEventType::RightMouseUp,
+                CGMouseButton::Right, None,
+            ),
+            MouseButtonKind::Middle => (
+                CGEventType::OtherMouseDown, CGEventType::OtherMouseUp,
+                CGMouseButton::Center, Some(2),
+            ),
+            MouseButtonKind::Back => (
+                CGEventType::OtherMouseDown, CGEventType::OtherMouseUp,
+                CGMouseButton::Center, Some(3),
+            ),
+            MouseButtonKind::Forward => (
+                CGEventType::OtherMouseDown, CGEventType::OtherMouseUp,
+                CGMouseButton::Center, Some(4),
+            ),
+        };
+
+        for click_count in [1, 2] {
+            for event_type in [down_type, up_type] {
+                if let Ok(event) =
+                    CGEvent::new_mouse_event(source(), event_type, self.cursor_pos, cg_button)
+                {
+                    event.set_integer_value_field(
+                        EventField::MOUSE_EVENT_CLICK_STATE,
+                        click_count,
+                    );
+                    if let Some(num) = button_number {
+                        event.set_integer_value_field(EventField::MOUSE_EVENT_BUTTON_NUMBER, num);
+                    }
+                    event.post(CGEventTapLocation::Session);
+                }
+            }
+        }
+    }
+
     fn clamp_to_screen(&mut self) {
         let displays = CGDisplay::active_displays().unwrap_or_default();
         if displays.is_empty() {

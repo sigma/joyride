@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fmt;
 
 pub const ALL_BUTTONS: &[(&str, &str)] = &[
     ("buttonA", "A"),
@@ -13,6 +14,103 @@ pub const ALL_BUTTONS: &[(&str, &str)] = &[
     ("buttonOptions", "Options"),
 ];
 
+/// Gamepad input sources that can be mapped to actions.
+/// D-pad directions are treated as discrete buttons when mapped.
+pub const ALL_INPUTS: &[(&str, &str)] = &[
+    ("buttonA", "A"),
+    ("buttonB", "B"),
+    ("buttonX", "X"),
+    ("buttonY", "Y"),
+    ("leftShoulder", "LB"),
+    ("rightShoulder", "RB"),
+    ("leftTrigger", "LT"),
+    ("rightTrigger", "RT"),
+    ("buttonMenu", "Menu"),
+    ("buttonOptions", "Options"),
+    ("dpadUp", "D-pad Up"),
+    ("dpadDown", "D-pad Down"),
+    ("dpadLeft", "D-pad Left"),
+    ("dpadRight", "D-pad Right"),
+];
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Action {
+    None,
+    LeftClick,
+    RightClick,
+    MiddleClick,
+    BackClick,
+    ForwardClick,
+    DoubleLeftClick,
+    DoubleRightClick,
+}
+
+impl Action {
+    /// All available action variants with their serialization ID and display name.
+    pub fn all() -> &'static [(&'static str, &'static str, Action)] {
+        &[
+            ("none", "None", Action::None),
+            ("leftClick", "Left Click", Action::LeftClick),
+            ("rightClick", "Right Click", Action::RightClick),
+            ("middleClick", "Middle Click", Action::MiddleClick),
+            ("backClick", "Back", Action::BackClick),
+            ("forwardClick", "Forward", Action::ForwardClick),
+            ("doubleLeftClick", "Double Left Click", Action::DoubleLeftClick),
+            ("doubleRightClick", "Double Right Click", Action::DoubleRightClick),
+        ]
+    }
+
+    /// Serialize to a string ID for persistence.
+    pub fn to_id(&self) -> &'static str {
+        match self {
+            Action::None => "none",
+            Action::LeftClick => "leftClick",
+            Action::RightClick => "rightClick",
+            Action::MiddleClick => "middleClick",
+            Action::BackClick => "backClick",
+            Action::ForwardClick => "forwardClick",
+            Action::DoubleLeftClick => "doubleLeftClick",
+            Action::DoubleRightClick => "doubleRightClick",
+        }
+    }
+
+    /// Deserialize from a string ID. Unknown IDs become None.
+    pub fn from_id(id: &str) -> Self {
+        match id {
+            "leftClick" => Action::LeftClick,
+            "rightClick" => Action::RightClick,
+            "middleClick" => Action::MiddleClick,
+            "backClick" => Action::BackClick,
+            "forwardClick" => Action::ForwardClick,
+            "doubleLeftClick" => Action::DoubleLeftClick,
+            "doubleRightClick" => Action::DoubleRightClick,
+            _ => Action::None,
+        }
+    }
+
+    /// Human-readable display name.
+    pub fn display_name(&self) -> &'static str {
+        match self {
+            Action::None => "None",
+            Action::LeftClick => "Left Click",
+            Action::RightClick => "Right Click",
+            Action::MiddleClick => "Middle Click",
+            Action::BackClick => "Back",
+            Action::ForwardClick => "Forward",
+            Action::DoubleLeftClick => "Double Left Click",
+            Action::DoubleRightClick => "Double Right Click",
+        }
+    }
+}
+
+impl fmt::Display for Action {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.display_name())
+    }
+}
+
+/// Legacy constant for backward compatibility with UI code.
+/// Prefer `Action::all()` for new code.
 pub const ALL_ACTIONS: &[(&str, &str)] = &[
     ("none", "None"),
     ("leftClick", "Left Click"),
@@ -20,6 +118,8 @@ pub const ALL_ACTIONS: &[(&str, &str)] = &[
     ("middleClick", "Middle Click"),
     ("backClick", "Back"),
     ("forwardClick", "Forward"),
+    ("doubleLeftClick", "Double Left Click"),
+    ("doubleRightClick", "Double Right Click"),
 ];
 
 pub struct Config {
@@ -140,11 +240,11 @@ impl Config {
         Ok(config)
     }
 
-    pub fn cli_button_map(&self) -> HashMap<String, String> {
+    pub fn cli_button_map(&self) -> HashMap<String, Action> {
         let mut m = HashMap::new();
-        m.insert(self.left_click.clone(), "leftClick".into());
-        m.insert(self.right_click.clone(), "rightClick".into());
-        m.insert(self.middle_click.clone(), "middleClick".into());
+        m.insert(self.left_click.clone(), Action::LeftClick);
+        m.insert(self.right_click.clone(), Action::RightClick);
+        m.insert(self.middle_click.clone(), Action::MiddleClick);
         m
     }
 }
@@ -307,17 +407,47 @@ mod tests {
     fn cli_button_map_defaults() {
         let config = Config::parse(&[]).unwrap();
         let map = config.cli_button_map();
-        assert_eq!(map.get("buttonA").unwrap(), "leftClick");
-        assert_eq!(map.get("buttonB").unwrap(), "rightClick");
-        assert_eq!(map.get("buttonX").unwrap(), "middleClick");
+        assert_eq!(*map.get("buttonA").unwrap(), Action::LeftClick);
+        assert_eq!(*map.get("buttonB").unwrap(), Action::RightClick);
+        assert_eq!(*map.get("buttonX").unwrap(), Action::MiddleClick);
     }
 
     #[test]
     fn cli_button_map_overridden() {
         let config = Config::parse(&args(&["--left-click", "buttonY"])).unwrap();
         let map = config.cli_button_map();
-        assert_eq!(map.get("buttonY").unwrap(), "leftClick");
+        assert_eq!(*map.get("buttonY").unwrap(), Action::LeftClick);
         assert!(!map.contains_key("buttonA"));
+    }
+
+    #[test]
+    fn action_round_trip() {
+        for (id, _, action) in Action::all() {
+            assert_eq!(Action::from_id(id), *action);
+            assert_eq!(action.to_id(), *id);
+        }
+    }
+
+    #[test]
+    fn action_unknown_id_is_none() {
+        assert_eq!(Action::from_id("bogus"), Action::None);
+        assert_eq!(Action::from_id(""), Action::None);
+    }
+
+    #[test]
+    fn action_display() {
+        assert_eq!(Action::LeftClick.to_string(), "Left Click");
+        assert_eq!(Action::DoubleLeftClick.to_string(), "Double Left Click");
+    }
+
+    #[test]
+    fn all_actions_consistent_with_enum() {
+        // Every entry in ALL_ACTIONS should round-trip through Action
+        for (id, display) in ALL_ACTIONS {
+            let action = Action::from_id(id);
+            assert_eq!(action.to_id(), *id);
+            assert_eq!(action.display_name(), *display);
+        }
     }
 
     #[test]

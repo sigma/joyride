@@ -7,7 +7,7 @@ use core_foundation::base::TCFType;
 use objc2_app_kit::{NSApplication, NSApplicationActivationPolicy};
 use objc2_foundation::MainThreadMarker;
 
-use joyride_config::{apply_deadzone, Config};
+use joyride_config::{apply_deadzone, Action, Config};
 use joyride_core::appwatcher::AppWatcher;
 use joyride_core::gamepad::GamepadManager;
 use joyride_core::mouse::{MouseButtonKind, MouseEmitter};
@@ -172,16 +172,23 @@ extern "C" fn poll_callback(ctx_ptr: *mut c_void) {
     // Buttons: dispatch based on mapping
     for (button_name, action) in &settings.button_map {
         let pressed = state.pressed_buttons.contains(button_name.as_str());
-        let mouse_button = match action.as_str() {
-            "leftClick" => Some(MouseButtonKind::Left),
-            "rightClick" => Some(MouseButtonKind::Right),
-            "middleClick" => Some(MouseButtonKind::Middle),
-            "backClick" => Some(MouseButtonKind::Back),
-            "forwardClick" => Some(MouseButtonKind::Forward),
-            _ => None,
-        };
-        if let Some(mb) = mouse_button {
-            emitter.update_button(mb, pressed);
+        match action {
+            Action::None => {}
+            Action::LeftClick => emitter.update_button(MouseButtonKind::Left, pressed),
+            Action::RightClick => emitter.update_button(MouseButtonKind::Right, pressed),
+            Action::MiddleClick => emitter.update_button(MouseButtonKind::Middle, pressed),
+            Action::BackClick => emitter.update_button(MouseButtonKind::Back, pressed),
+            Action::ForwardClick => emitter.update_button(MouseButtonKind::Forward, pressed),
+            Action::DoubleLeftClick => {
+                if pressed {
+                    emitter.double_click(MouseButtonKind::Left);
+                }
+            }
+            Action::DoubleRightClick => {
+                if pressed {
+                    emitter.double_click(MouseButtonKind::Right);
+                }
+            }
         }
     }
 }

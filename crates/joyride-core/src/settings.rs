@@ -4,7 +4,7 @@ use std::rc::Rc;
 
 use objc2_foundation::{NSString, NSUserDefaults};
 
-use joyride_config::{Config, ALL_BUTTONS};
+use joyride_config::{Action, Config, ALL_BUTTONS};
 
 pub struct Settings {
     cli_defaults: Config,
@@ -16,8 +16,8 @@ pub struct Settings {
     pub natural_scroll: bool,
     pub debug: bool,
     pub excluded_bundle_ids: Vec<String>,
-    /// Maps gamepad button name → action name (e.g. "buttonA" → "leftClick")
-    pub button_map: HashMap<String, String>,
+    /// Maps gamepad input name → action (e.g. "buttonA" → Action::LeftClick)
+    pub button_map: HashMap<String, Action>,
 }
 
 impl Settings {
@@ -38,7 +38,8 @@ impl Settings {
         for (btn, _) in ALL_BUTTONS {
             let key = format!("mapping.{btn}");
             let action = ud_string(&ud, &key)
-                .unwrap_or_else(|| cli_defaults_map.get(*btn).cloned().unwrap_or("none".into()));
+                .map(|s| Action::from_id(&s))
+                .unwrap_or_else(|| cli_defaults_map.get(*btn).cloned().unwrap_or(Action::None));
             button_map.insert(btn.to_string(), action);
         }
 
@@ -76,7 +77,7 @@ impl Settings {
             let key = format!("mapping.{btn}");
             unsafe {
                 ud.setObject_forKey(
-                    Some(&NSString::from_str(action)),
+                    Some(&NSString::from_str(action.to_id())),
                     &NSString::from_str(&key),
                 );
             }
@@ -167,11 +168,11 @@ mod tests {
     fn default_button_map_cli_assignments() {
         let settings = Settings::new(default_config());
         let s = settings.borrow();
-        assert_eq!(s.button_map.get("buttonA").unwrap(), "leftClick");
-        assert_eq!(s.button_map.get("buttonB").unwrap(), "rightClick");
-        assert_eq!(s.button_map.get("buttonX").unwrap(), "middleClick");
-        // Unassigned buttons default to "none"
-        assert_eq!(s.button_map.get("buttonY").unwrap(), "none");
+        assert_eq!(*s.button_map.get("buttonA").unwrap(), Action::LeftClick);
+        assert_eq!(*s.button_map.get("buttonB").unwrap(), Action::RightClick);
+        assert_eq!(*s.button_map.get("buttonX").unwrap(), Action::MiddleClick);
+        // Unassigned buttons default to None
+        assert_eq!(*s.button_map.get("buttonY").unwrap(), Action::None);
     }
 
     #[test]
@@ -181,13 +182,13 @@ mod tests {
             let mut s = settings.borrow_mut();
             s.cursor_speed = 9999.0;
             s.natural_scroll = true;
-            s.button_map.insert("buttonA".to_string(), "none".to_string());
+            s.button_map.insert("buttonA".to_string(), Action::None);
             s.reset_to_defaults();
         }
         let s = settings.borrow();
         assert_eq!(s.cursor_speed, 1500.0);
         assert!(!s.natural_scroll);
-        assert_eq!(s.button_map.get("buttonA").unwrap(), "leftClick");
+        assert_eq!(*s.button_map.get("buttonA").unwrap(), Action::LeftClick);
     }
 
     #[test]
