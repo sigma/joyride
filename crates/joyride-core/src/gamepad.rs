@@ -121,27 +121,17 @@ impl GamepadManager {
                 .setValueChangedHandler(&*handler as *const _ as *mut _)
         };
 
-        // D-pad: store analog values and emit discrete button events
+        // D-pad: store analog values and emit discrete button events with hysteresis
         let state = Rc::clone(&self.state);
         let debug = self.debug;
+        let dpad_active = Rc::new(RefCell::new(std::collections::HashSet::<String>::new()));
+        let dpad_active_clone = Rc::clone(&dpad_active);
         let handler = RcBlock::new(
             move |_: NonNull<GCControllerDirectionPad>, x: c_float, y: c_float| {
                 let mut s = state.borrow_mut();
                 s.dpad = (x, y);
-                // Emit discrete dpad button presses (threshold 0.5)
-                let threshold: c_float = 0.5;
-                for (name, active) in [
-                    ("dpadUp", y > threshold),
-                    ("dpadDown", y < -threshold),
-                    ("dpadRight", x > threshold),
-                    ("dpadLeft", x < -threshold),
-                ] {
-                    if active {
-                        s.pressed_buttons.insert(name.to_string());
-                    } else {
-                        s.pressed_buttons.remove(name);
-                    }
-                }
+                let mut active = dpad_active_clone.borrow_mut();
+                joyride_config::apply_dpad_hysteresis(x, y, &mut active, &mut s.pressed_buttons);
                 if debug {
                     eprintln!("joyride: D({x}, {y})");
                 }

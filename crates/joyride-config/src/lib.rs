@@ -476,6 +476,36 @@ impl Profile {
     }
 }
 
+/// D-pad hysteresis thresholds: activate at 0.6, deactivate at 0.4.
+pub const DPAD_ACTIVATE: f32 = 0.6;
+/// D-pad hysteresis deactivation threshold.
+pub const DPAD_DEACTIVATE: f32 = 0.4;
+
+/// Apply hysteresis to d-pad axis values, updating the active set and pressed_buttons.
+pub fn apply_dpad_hysteresis(
+    x: f32,
+    y: f32,
+    active: &mut HashSet<String>,
+    pressed_buttons: &mut HashSet<String>,
+) {
+    for &(name, value) in &[
+        ("dpadUp", y),
+        ("dpadDown", -y),
+        ("dpadRight", x),
+        ("dpadLeft", -x),
+    ] {
+        let is_active = active.contains(name);
+        if !is_active && value > DPAD_ACTIVATE {
+            active.insert(name.to_string());
+            pressed_buttons.insert(name.to_string());
+        } else if is_active && value < DPAD_DEACTIVATE {
+            active.remove(name);
+            pressed_buttons.remove(name);
+        }
+    }
+}
+
+/// Apply deadzone to an analog stick axis value.
 pub fn apply_deadzone(value: f32, dz: f32) -> f32 {
     if value.abs() <= dz {
         return 0.0;
@@ -689,6 +719,75 @@ mod tests {
     fn key_combo_from_invalid() {
         assert_eq!(Action::from_id("key:"), Action::None);
         assert_eq!(Action::from_id("key:invalid"), Action::None);
+    }
+
+    // -- D-pad hysteresis --
+
+    #[test]
+    fn dpad_hysteresis_activate_above_threshold() {
+        let mut active = HashSet::new();
+        let mut pressed = HashSet::new();
+        apply_dpad_hysteresis(0.7, 0.0, &mut active, &mut pressed);
+        assert!(pressed.contains("dpadRight"));
+        assert!(!pressed.contains("dpadLeft"));
+    }
+
+    #[test]
+    fn dpad_hysteresis_no_flicker_in_dead_band() {
+        let mut active = HashSet::new();
+        let mut pressed = HashSet::new();
+
+        // Go above activate threshold
+        apply_dpad_hysteresis(0.7, 0.0, &mut active, &mut pressed);
+        assert!(pressed.contains("dpadRight"));
+
+        // Drop to 0.45 (below activate but above deactivate) — should stay active
+        apply_dpad_hysteresis(0.45, 0.0, &mut active, &mut pressed);
+        assert!(pressed.contains("dpadRight"), "should not deactivate in dead band");
+
+        // Oscillate back to 0.55 — still active, no flicker
+        apply_dpad_hysteresis(0.55, 0.0, &mut active, &mut pressed);
+        assert!(pressed.contains("dpadRight"));
+    }
+
+    #[test]
+    fn dpad_hysteresis_deactivate_below_threshold() {
+        let mut active = HashSet::new();
+        let mut pressed = HashSet::new();
+
+        // Activate
+        apply_dpad_hysteresis(0.7, 0.0, &mut active, &mut pressed);
+        assert!(pressed.contains("dpadRight"));
+
+        // Drop below deactivate threshold
+        apply_dpad_hysteresis(0.3, 0.0, &mut active, &mut pressed);
+        assert!(!pressed.contains("dpadRight"));
+    }
+
+    #[test]
+    fn dpad_hysteresis_full_cycle() {
+        let mut active = HashSet::new();
+        let mut pressed = HashSet::new();
+
+        // Not active initially
+        apply_dpad_hysteresis(0.55, 0.0, &mut active, &mut pressed);
+        assert!(!pressed.contains("dpadRight"), "0.55 < activate threshold");
+
+        // Cross activate
+        apply_dpad_hysteresis(0.65, 0.0, &mut active, &mut pressed);
+        assert!(pressed.contains("dpadRight"));
+
+        // Stay in dead band
+        apply_dpad_hysteresis(0.45, 0.0, &mut active, &mut pressed);
+        assert!(pressed.contains("dpadRight"), "still in dead band");
+
+        // Cross deactivate
+        apply_dpad_hysteresis(0.35, 0.0, &mut active, &mut pressed);
+        assert!(!pressed.contains("dpadRight"));
+
+        // Re-activate
+        apply_dpad_hysteresis(0.65, 0.0, &mut active, &mut pressed);
+        assert!(pressed.contains("dpadRight"));
     }
 
     #[test]
