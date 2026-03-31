@@ -1,0 +1,93 @@
+{ self }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
+with lib;
+let
+  cfg = config.programs.joyride;
+  appName = "joyride";
+  appDir = "/Users/${cfg.user}/Applications/${appName}.app";
+  storePkg = self.packages.${pkgs.stdenv.system}.default;
+in
+{
+  options.programs.joyride = {
+    enable = mkEnableOption "joyride gamepad-to-mouse daemon";
+
+    user = mkOption {
+      type = types.str;
+      description = "Username for installing the app bundle to ~/Applications";
+    };
+
+    excludeApps = mkOption {
+      type = types.listOf types.str;
+      default = [ ];
+      description = "Bundle IDs where joyride is disabled (gamepad passthrough)";
+    };
+
+    cursorSpeed = mkOption {
+      type = types.int;
+      default = 1500;
+      description = "Cursor speed in pixels/sec at full stick deflection";
+    };
+
+    dpadSpeed = mkOption {
+      type = types.int;
+      default = 150;
+      description = "D-pad cursor speed in pixels/sec (precise movement)";
+    };
+
+    scrollSpeed = mkOption {
+      type = types.int;
+      default = 8;
+      description = "Scroll speed multiplier";
+    };
+
+    naturalScroll = mkOption {
+      type = types.bool;
+      default = false;
+      description = "Use natural scrolling direction";
+    };
+  };
+
+  config = mkIf cfg.enable {
+    # Copy app bundle to ~/Applications and sign for stable TCC permissions.
+    system.activationScripts.postActivation.text = ''
+      echo >&2 "installing ${appName}.app..."
+      mkdir -p "${appDir}/Contents/MacOS"
+      cp "${storePkg}/Applications/${appName}.app/Contents/MacOS/${appName}" "${appDir}/Contents/MacOS/"
+      cp "${storePkg}/Applications/${appName}.app/Contents/Info.plist" "${appDir}/Contents/"
+      /usr/bin/codesign --force --sign - --identifier dev.${appName} "${appDir}"
+    '';
+
+    launchd.user.agents.joyride = {
+      serviceConfig = {
+        ProgramArguments =
+          [
+            "${appDir}/Contents/MacOS/${appName}"
+          ]
+          ++ optionals (cfg.excludeApps != [ ]) [
+            "--exclude"
+            (concatStringsSep "," cfg.excludeApps)
+          ]
+          ++ [
+            "--cursor-speed"
+            (toString cfg.cursorSpeed)
+            "--dpad-speed"
+            (toString cfg.dpadSpeed)
+            "--scroll-speed"
+            (toString cfg.scrollSpeed)
+          ]
+          ++ optionals cfg.naturalScroll [
+            "--natural-scroll"
+          ];
+        KeepAlive = true;
+        RunAtLoad = true;
+        StandardOutPath = "/tmp/joyride.log";
+        StandardErrorPath = "/tmp/joyride.log";
+      };
+    };
+  };
+}
