@@ -6,14 +6,15 @@
   "blocks": [
     "jr-byo.3"
   ],
+  "closed_at": "2026-03-31T15:27:22Z",
   "created": "2026-03-31T15:24:47Z",
   "description": "MouseEmitter::emit() blocks the main thread with thread::sleep for double-click delays. Use dispatch_after to schedule delayed CGEvents asynchronously.",
   "id": "jr-byo.2",
   "labels": [],
   "parent": "jr-byo",
   "priority": 2,
-  "status": "in_progress",
+  "status": "closed",
   "title": "Replace thread::sleep with dispatch_after for delayed events",
   "type": "task",
-  "updated_at": "2026-03-31T15:25:48Z"
+  "updated_at": "2026-03-31T15:27:22Z"
 }
