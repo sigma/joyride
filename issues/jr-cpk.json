@@ -4,13 +4,14 @@
     "jr-2k6"
   ],
   "blocks": [],
+  "closed_at": "2026-03-31T16:21:10Z",
   "created": "2026-03-31T15:52:09Z",
   "description": "Delayed events (double-click gap) use dispatch_after with mem::forget, which leaks blocks and cannot be cancelled. Replace with a proper event queue that supports cancellation. This blocks future features like hold-to-fire and interruptible macros.",
   "id": "jr-cpk",
   "labels": [],
   "priority": 2,
-  "status": "in_progress",
+  "status": "closed",
   "title": "Replace dispatch_after+mem::forget with cancellable event scheduler",
   "type": "task",
-  "updated_at": "2026-03-31T16:18:12Z"
+  "updated_at": "2026-03-31T16:21:10Z"
 }
