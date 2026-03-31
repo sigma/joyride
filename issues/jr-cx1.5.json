@@ -3,7 +3,9 @@
   "blocked_by": [
     "jr-cx1.4"
   ],
-  "blocks": [],
+  "blocks": [
+    "jr-cx1.6"
+  ],
   "created": "2026-03-31T09:35:14Z",
   "description": "settings_window.rs, statusbar.rs",
   "id": "jr-cx1.5",

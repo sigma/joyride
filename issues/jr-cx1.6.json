@@ -1,6 +1,8 @@
 {
   "assignee": "",
-  "blocked_by": [],
+  "blocked_by": [
+    "jr-cx1.5"
+  ],
   "blocks": [],
   "created": "2026-03-31T09:35:14Z",
   "description": "main.rs uses workspace crates, move integration tests",
@@ -11,5 +13,5 @@
   "status": "open",
   "title": "Clean up binary crate",
   "type": "task",
-  "updated_at": "2026-03-31T09:35:14Z"
+  "updated_at": "2026-03-31T09:35:19Z"
 }
