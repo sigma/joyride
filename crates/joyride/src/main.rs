@@ -222,11 +222,15 @@ extern "C" fn poll_callback(ctx_ptr: *mut c_void) {
             Action::DoubleLeftClick => {
                 if pressed {
                     emitter.double_click(MouseButtonKind::Left);
+                } else {
+                    emitter.clear_button(MouseButtonKind::Left);
                 }
             }
             Action::DoubleRightClick => {
                 if pressed {
                     emitter.double_click(MouseButtonKind::Right);
+                } else {
+                    emitter.clear_button(MouseButtonKind::Right);
                 }
             }
             Action::KeyPress(combo) => {

@@ -113,7 +113,20 @@ impl MouseEmitter {
         }
     }
 
+    /// Clear internal button state without emitting any event.
+    /// Used to reset edge detection for actions like double-click.
+    pub fn clear_button(&mut self, button: MouseButtonKind) {
+        self.button_state.insert(button, false);
+    }
+
     pub fn double_click(&mut self, button: MouseButtonKind) {
+        // Only fire on the press edge — if already pressed, this is a repeat frame
+        let was_pressed = self.button_state.get(&button).copied().unwrap_or(false);
+        if was_pressed {
+            return;
+        }
+        self.button_state.insert(button, true);
+
         if let Ok(event) = CGEvent::new(source()) {
             self.cursor_pos = event.location();
         }
@@ -360,5 +373,31 @@ mod tests {
         // Now the guard would correctly skip
         let should_skip = state.is_idle() && !emitter.has_buttons_pressed();
         assert!(should_skip);
+    }
+
+    /// Regression: double_click must only fire once per press, not every poll
+    /// frame while the button is held. Repeated calls while held should be
+    /// no-ops, otherwise macOS interprets it as triple/quadruple click.
+    #[test]
+    fn double_click_fires_once_per_press() {
+        let mut emitter = MouseEmitter::new();
+
+        // First call: should set internal state to pressed
+        emitter.double_click(MouseButtonKind::Left);
+        assert!(emitter.has_buttons_pressed());
+
+        // Second call (simulating next poll frame, button still held):
+        // should be a no-op due to edge detection
+        emitter.double_click(MouseButtonKind::Left);
+        // Still pressed (from first call)
+        assert!(emitter.has_buttons_pressed());
+
+        // Release resets for next press
+        emitter.clear_button(MouseButtonKind::Left);
+        assert!(!emitter.has_buttons_pressed());
+
+        // Can fire again after release
+        emitter.double_click(MouseButtonKind::Left);
+        assert!(emitter.has_buttons_pressed());
     }
 }
