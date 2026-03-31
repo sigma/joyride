@@ -1,5 +1,5 @@
 {
-  "assignee": "",
+  "assignee": "unknown",
   "blocked_by": [],
   "blocks": [
     "jr-2m1.2"
@@ -10,8 +10,8 @@
   "labels": [],
   "parent": "jr-2m1",
   "priority": 2,
-  "status": "open",
+  "status": "in_progress",
   "title": "Profile data model",
   "type": "task",
-  "updated_at": "2026-03-31T10:00:25Z"
+  "updated_at": "2026-03-31T12:57:40Z"
 }
